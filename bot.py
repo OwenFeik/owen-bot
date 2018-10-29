@@ -1,18 +1,18 @@
 import discord
 from scryfall import get_uri
 
-TOKEN = 'NTA2MzU4MTk1NDYwMjQzNDU3.Drg-qQ.yeBMOibv_Gk-rRApH7OnS-b2OBI'
-
-client = discord.Client()
-
 @client.event
 async def on_message(message):
     print(message.content)
 
+    #If we sent this message, do nothing
     if message.author == client.user:
         return
 
+    #If the message contains a card tag
     if '[' in message.content and ']' in message.content:
+        
+        #Iterate through the message to find all card names
         card_names=[]
         is_query=False
         card_name=''
@@ -26,16 +26,20 @@ async def on_message(message):
             elif is_query:
                 card_name+=c
 
+        #Find and send one or more messages for each card.
         for i in range(0,len(card_names)):
-            uri=get_uri(card_names[i])
+            uris=get_uri(card_names[i])
             if uri:
-                img=discord.Embed()
-                img.set_image(url=uri)
-                await client.send_message(message.channel,embed=img)
+                for uri in uris:
+                    img=discord.Embed()
+                    img.set_image(url=uri)
+                    print('Found '+uri)
+                    await client.send_message(message.channel,embed=img)
             else:
-                await client.send_message(message.channel,content='Card not found :\'(')
-        
-        print(card_names)
+                print('Failed to find '+card_names[i])
+                await client.send_message(message.channel,content=card_names[i]+' not found :cry:')
+
+    #Handles commands (--)
     if message.content.startswith('--'):
         if message.content.startswith('--hello'):
             msg=f'Greetings, {message.author.mention}'
@@ -47,11 +51,19 @@ async def on_message(message):
             msg='OwO, what\'s this? I don\'t understand that! Maybe try --help'
         await client.send_message(message.channel,msg)
 
+#Startup notification
 @client.event
 async def on_ready():
     print('Logged in as')
     print(client.user.name)
     print(client.user.id)
-    print('------')
+    print('---LOG---')
 
-client.run(TOKEN)
+
+#Get the client token
+with open('token.txt', 'r') as f:
+    token = f.read()
+
+#Start the client.
+client = discord.Client()
+client.run(token)
