@@ -36,7 +36,7 @@ async def on_message(message):
         #Find and send one or more messages for each card.
         for i in range(0,len(card_names)):
             uris=get_uri(card_names[i])
-            if uri:
+            if uris:
                 for uri in uris:
                     img=discord.Embed()
                     img.set_image(url=uri)
