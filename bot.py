@@ -1,6 +1,13 @@
 import discord
 from scryfall import get_uri
 
+#Get the client token
+with open('token.txt', 'r') as f:
+    token = f.read()
+
+#Start the client.
+client = discord.Client()
+
 @client.event
 async def on_message(message):
     print(message.content)
@@ -59,11 +66,5 @@ async def on_ready():
     print(client.user.id)
     print('---LOG---')
 
-
-#Get the client token
-with open('token.txt', 'r') as f:
-    token = f.read()
-
-#Start the client.
-client = discord.Client()
+#Connect
 client.run(token)
