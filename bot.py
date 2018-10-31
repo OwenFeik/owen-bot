@@ -1,3 +1,6 @@
+#TODO syntax command
+#TODO user joined your channel
+
 import discord
 from random import shuffle
 from scryfall import get_uri,get_random_uri,get_similar,get_random_from_set,get_printing
@@ -105,9 +108,9 @@ async def on_message(message):
                     img.set_image(url=get_random_uri())
                     await client.send_message(message.channel,embed=img)
                 elif name=='best card' or name=='the best card':
-                    img=discord.Embed().set_image(url=get_uri('Kalonian Hydra'))
-                    print('Kalonian Hydra is the best card.')
+                    img=discord.Embed().set_image(url=get_uri('Kalonian Hydra')[0])
                     await client.send_message(message.channel,embed=img)
+                    print('Kalonian Hydra is the best card.')
                 else:
                     uris=get_uri(name)
                     if uris:
