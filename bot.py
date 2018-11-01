@@ -1,4 +1,3 @@
-#TODO syntax command
 #TODO user joined your channel
 
 import discord
@@ -15,11 +14,11 @@ client = discord.Client()
 #Capitalise a card name
 def capitalise(name):
     out=''
-    for i in range(0,len(name)):
-        if (name[i].isalnum() and not name[i-1].isalnum()) or i==0:
-            out+=name[i].capitalize()
-        else:
-            out+=name[i]
+    for i in range(0,len(name)): #For each character
+        if (name[i].isalnum() and not name[i-1].isalnum()) or i==0: #If it's a letter preceded by a non-letter
+            out+=name[i].capitalize() #Add the capital version to the out string
+        else: #Otherwise, just normal character
+            out+=name[i] #To out string
     return out
 
 @client.event
@@ -39,29 +38,27 @@ async def on_message(message):
         is_set=False
         card_name=''
         set_name=''
-        for c in message.content:
-            if c=='[':
+        for c in message.content: #Iterate through characters in the string
+            if c=='[': #Card tags are [] [ is the open tag
                 is_query=True
-            elif c==']':
+            elif c==']': #Close the card tag
                 is_query=False
                 is_set=False
-                if card_name:
+                if card_name: #This means either the end of a card name
                     card_names.append(card_name)
                     card_name=''
-                elif set_name:
+                elif set_name: #Or the end of the set name.
                     card_names[len(card_names)-1]=[card_names[len(card_names)-1],set_name]
                     set_name=''
-            elif c=='|':
+            elif c=='|': #This indicates there is a set
                 is_query=False
                 is_set=True
-                card_names.append(card_name)
+                card_names.append(card_name) #A set means the end of the card name
                 card_name=''
             elif is_set:
                 set_name+=c
             elif is_query:
                 card_name+=c
-
-                #[nightmare|m15]
 
         #Find images and send one or more messages for each card.
         for card in card_names:
@@ -82,51 +79,52 @@ async def on_message(message):
                         await client.send_message(message.channel,embed=img)
                     else: #If we don't get a uri, the search failed and the set doesn't exist.
                         await client.send_message(message.channel,content=f"Couldn't find set {ed} :cry:")
-                else:
-                    found,data=get_printing(name,ed)
-                    if found=='card':
-                        for uri in data:
+                else: #Otherwise, they want a specific card
+                    found,data=get_printing(name,ed) #Found is an indicator of what the call found, data is the data
+                    if found=='card': #If we found a card
+                        for uri in data: #Show all of the images we found
                             img=discord.Embed().set_image(url=uri)
                             print(f'Found {uri}')
                             await client.send_message(message.channel,embed=img)
-                    elif found=='suggs':
-                        print(f'Failed to find {capitalise(name)} in {ed}')
-                        if len(data)>5:
-                            data=shuffle(data)[0:5].sort()
-                        msg=f"Couldn't find {capitalise(name)}. Maybe you meant:\n" 
-                        for name in data:
-                            msg+=name+'\n'
+                    elif found=='suggs': #If we got a list of suggestions.
+                        print(f'Failed to find {name} in {ed}')
+                        if len(data)>5: #If there are more than 5 suggestions
+                            shuffle(data)
+                            data=data[0:5].sort() #Pick 5 at random
+                        msg=f"Couldn't find {capitalise(name)}. Maybe you meant:\n\n" 
+                        for name in data: #Add them to a nicely formatted string
+                            msg+='\t'+name+'\n'
                         print('Found alternatives.')
-                        await client.send_message(message.channel,content=msg[0:len(msg-1)])
-                    else:
-                        print(f'Failed to find {capitalise(name)} in {ed}')
+                        await client.send_message(message.channel,content=msg[0:len(msg-1)]) #Last char is a newline
+                    else: #We didn't get a card or a list of suggestions
+                        print(f'Failed to find {name} in {ed}')
                         await client.send_message(message.channel,content=f'{capitalise(name)} not found in {ed} :cry:')
 
-            else:
-                if name=='random':
+            else: #No edition was specified
+                if name=='random': #If they want a random card
                     img=discord.Embed()
                     img.set_image(url=get_random_uri())
                     await client.send_message(message.channel,embed=img)
-                elif name=='best card' or name=='the best card':
+                elif name=='best card' or name=='the best card': #Kalonian Hydra is the best card.
                     img=discord.Embed().set_image(url=get_uri('Kalonian Hydra')[0])
-                    await client.send_message(message.channel,embed=img)
                     print('Kalonian Hydra is the best card.')
-                else:
+                    await client.send_message(message.channel,embed=img)
+                else: #Just a normal card search
                     uris=get_uri(name)
-                    if uris:
-                        for uri in uris:
+                    if uris: #If we found a card
+                        for uri in uris: #Send as many images of the card as we have
                             img=discord.Embed().set_image(url=uri)
                             print(f'Found {uri}')
                             await client.send_message(message.channel,embed=img)
-                    else:
-                        print(f'Failed to find {capitalise(name)}')
-                        suggs=get_similar(name)
-                        if suggs:
-                            if len(suggs)>5:
+                    else: #No card was found
+                        print(f'Failed to find {name}')
+                        suggs=get_similar(name) #Find a list of similarly named cards
+                        if suggs: #If we got some suggestions
+                            if len(suggs)>5: #Cut down to 5 random suggestions.
                                 shuffle(suggs)
-                                suggs=suggs[0:5]
+                                suggs=suggs[0:5].sort()
                             msg=f"Couldn't find {capitalise(name)}. Maybe you meant:\n\n" 
-                            for name in suggs:
+                            for name in suggs: #Format suggestions nicely
                                 msg+='\t'+name+'\n'
                             print('Found alternatives.')
                             await client.send_message(message.channel,content=msg[0:len(msg)-1])
@@ -135,15 +133,17 @@ async def on_message(message):
 
     #Handles commands (--)
     if message.content.startswith('--'):
-        if message.content.startswith('--hello'):
-            msg=f'Greetings, {message.author.mention}'
-        elif message.content.startswith('--help'):
-            msg='Use [Card Name] to call me!'
-        elif message.content.startswith('--easteregg'):
+        if message.content.startswith('--all'): #List all commands
+            msg='All commands:\n\n\t--all\n\t--hello\n\t--help\n\t--syntax'
+        elif message.content.startswith('--easteregg'): #Easter egg
             msg='Smartarse'
-        elif message.content.startswith('--all'):
-            msg='All commands:\n--all\n--hello\n--help'
-        else:
+        elif message.content.startswith('--hello'): #Hello World
+            msg=f'Greetings, {message.author.mention}'
+        elif message.content.startswith('--help'): #Offer assistance
+            msg='Use [Card Name] to call me! Try --all or --syntax for more info.'
+        elif message.content.startswith('--syntax'): #Breakdown of bot syntax
+            msg='Syntax overview:\n\n\tFind a [card] like this.\n\tFind a specific [printing|like this]\n\tGet a [random] card.\n\tCall a --command.'
+        else: #Otherwise, their command is invalid
             msg='OwO, what\'s this? I don\'t understand that! Maybe try --help'
         await client.send_message(message.channel,msg)
 

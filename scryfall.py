@@ -26,18 +26,18 @@ def get_printing(query,ed):
 
 #Get a random card uri
 def get_random_uri():
-    request='https://api.scryfall.com/cards/random'
-    r=requests.get(request).json()
-    return r['image_uris']['normal']
+    request='https://api.scryfall.com/cards/random' #Information of a random card
+    r=requests.get(request).json() #Get data as json
+    return r['image_uris']['normal'] #Return the uri of the image
 
 #Get a random card froma set
 def get_random_from_set(ed):
-    request='https://api.scryfall.com/cards/random?q=e%3D'+ed
-    r=requests.get(request).json()
-    if 'status' in r and r['status']==404:
+    request='https://api.scryfall.com/cards/random?q=e%3D'+ed #Provide edition to get random card from
+    r=requests.get(request).json() #Get as dict
+    if 'status' in r and r['status']==404: #This means the set wasn't found
         return False
-    else:
-        return r['image_uris']['normal']
+    else: #We found a card
+        return r['image_uris']['normal'] #Image of the card
 
 #Get suggestions similar to a card
 def get_similar(query):
