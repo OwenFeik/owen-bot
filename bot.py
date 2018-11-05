@@ -1,4 +1,4 @@
-#TODO user joined your channel
+#Requires Python 3.6
 
 import discord
 from random import shuffle
@@ -146,6 +146,16 @@ async def on_message(message):
         else: #Otherwise, their command is invalid
             msg='OwO, what\'s this? I don\'t understand that! Maybe try --help'
         await client.send_message(message.channel,msg)
+
+@client.event
+async def on_voice_state_update(old,new): #When a user joins a voice channel
+    if new==client.user: #If it was this, ignore
+        return
+
+    vc=await client.join_voice_channel(new.voice.voice_channel) #Join the voice channel they joined
+    player=vc.create_ffmpeg_player('user_joined.mp3') #Create player
+    player.start() #Play sound
+    await vc.disconnect() #Leave
 
 #Startup notification
 @client.event
