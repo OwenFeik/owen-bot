@@ -3,6 +3,7 @@
 import discord
 from random import shuffle
 from scryfall import get_uri,get_random_uri,get_similar,get_random_from_set,get_printing
+from time import sleep
 
 #Get the client token
 with open('token.txt', 'r') as f:
@@ -147,15 +148,24 @@ async def on_message(message):
             msg='OwO, what\'s this? I don\'t understand that! Maybe try --help'
         await client.send_message(message.channel,msg)
 
+
 @client.event
 async def on_voice_state_update(old,new): #When a user joins a voice channel
     if new==client.user: #If it was this, ignore
         return
+    
+    chnl=new.voice.voice_channel #Voice channel person joined
 
-    vc=await client.join_voice_channel(new.voice.voice_channel) #Join the voice channel they joined
-    player=vc.create_ffmpeg_player('user_joined.mp3') #Create player
-    player.start() #Play sound
-    await vc.disconnect() #Leave
+    if chnl:
+        print(new.nick+' joined '+str(chnl)) #Print the channel and user
+        vc=await client.join_voice_channel(new.voice.voice_channel) #Join the voice channel they joined
+        player=vc.create_ffmpeg_player('user_joined.mp3') #Create player
+        print('Played sound file in '+str(new.voice.voice_channel))
+        player.start() #Play sound
+        sleep(2.7) #Wait for sound to finish
+        await vc.disconnect() #Leave
+    else:
+        print(old.nick+' left '+str(old.voice.voice_channel)) #Announce that someone left
 
 #Startup notification
 @client.event
