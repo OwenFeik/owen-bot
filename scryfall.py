@@ -1,4 +1,5 @@
 import requests
+from card import Card
 
 #Get uri of a cardname query
 def get_uri(query):
@@ -7,8 +8,15 @@ def get_uri(query):
     if 'status' in r and r['status']==404: #If no card found, return false
         return False
     elif r['layout']=='transform' or r['layout']=='double_faced_token': #If DFC get both faces
-        return [r['card_faces'][i]['image_uris']['normal'] for i in range(0,2)]
-    return [r["image_uris"]["normal"]] #If normal card, get image
+        names=[r['card_faces'][i]['name'] for i in range(0,2)]
+        uris=[r['card_faces'][i]['image_uris']['normal'] for i in range(0,2)]
+        price=r.get('usd')
+        return Card(names,uris,price)
+    
+    names=[r['name']]
+    uris=[r["image_uris"]["normal"]]
+    price=r.get('usd')
+    return Card(names,uris,price) #If normal card, get image
 
 
 #Get uri of a specific printing of card
@@ -20,15 +28,26 @@ def get_printing(query,ed):
     elif len(r['data'])>1: #If there are more than 1 matches
         return 'suggs',[r['data'][i]['name'] for i in range(0,len(r['data']))] #List of card names to print as suggestions
     else:
-        if r['data'][0]['layout']=='transform' or r['data'][0]['layout']=='double_faced_token': #If its a DFC get both sides
-            return 'card',[r['data'][i]['image_uris']['normal'] for i in range(0,2)]
-        return 'card',[r['data'][0]['image_uris']['normal']] #Normal card, give card image
+        card=r['data'][0]
+        if card['layout']=='transform' or card['layout']=='double_faced_token': #If its a DFC get both sides
+            names=[card['card_faces'][i]['name'] for i in range(0,2)]
+            uris=[card['card_faces'][i]['image_uris']['normal'] for i in range(0,2)]
+            price=card['usd']
+
+            return 'card',Card(names,uris,price)
+        names=[card['name']]
+        uris=[card['image_uris']['normal']]
+        price=card['usd']
+        return 'card',Card(names,uris,price) #Normal card, give card image
 
 #Get a random card uri
 def get_random_uri():
     request='https://api.scryfall.com/cards/random' #Information of a random card
     r=requests.get(request).json() #Get data as json
-    return r['image_uris']['normal'] #Return the uri of the image
+    names=[r['name']]
+    uris=[r['image_uris']['normal']]
+    price=r.get('usd')
+    return Card(names,uris,price) #Return the uri of the image
 
 #Get a random card froma set
 def get_random_from_set(ed):
@@ -37,7 +56,10 @@ def get_random_from_set(ed):
     if 'status' in r and r['status']==404: #This means the set wasn't found
         return False
     else: #We found a card
-        return r['image_uris']['normal'] #Image of the card
+        names=[r['name']]
+        uris=[r['image_uris']['normal']]
+        price=r.get('usd')
+        return Card(names,uris,price) #Image of the card
 
 #Get suggestions similar to a card
 def get_similar(query):

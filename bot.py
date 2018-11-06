@@ -22,9 +22,26 @@ def capitalise(name):
             out+=name[i] #To out string
     return out
 
+def make_card_message(card):
+    if card.dfc: #If we got a DFC
+        img1=discord.Embed().set_image(url=card.uri)
+        msg1=card.name+'\t'+card.price
+        img2=discord.Embed().set_image(url=card.back_uri)
+        msg2=card.back_name
+        return [(img1,msg1),(img2,msg2)]
+    else:
+        img=discord.Embed().set_image(url=card.uri)
+        msg=card.name+'\t'+card.price
+        return [(img,msg)]
+
 @client.event
 async def on_message(message):
-    print(message.content)
+    if message.content:
+        print(message.author.name+': '+message.content)
+    else:
+        print(message.authot.name+' sent and attachment.')
+
+    chnl=message.channel
 
     #If we sent this message, do nothing
     if message.author == client.user:
@@ -74,24 +91,25 @@ async def on_message(message):
             #If an edition was specified
             if ed:
                 if name=='random': #If they want random, get random card.
-                    uri=get_random_from_set(ed)
-                    if uri:
-                        img=discord.Embed().set_image(url=uri)
-                        await client.send_message(message.channel,embed=img)
+                    data=get_random_from_set(ed)
+                    if data:
+                        messages=make_card_message(data)
+                        for msg in messages:
+                            await client.send_message(chnl,embed=msg[0],content=msg[1])
                     else: #If we don't get a uri, the search failed and the set doesn't exist.
                         await client.send_message(message.channel,content=f"Couldn't find set {ed} :cry:")
                 else: #Otherwise, they want a specific card
                     found,data=get_printing(name,ed) #Found is an indicator of what the call found, data is the data
                     if found=='card': #If we found a card
-                        for uri in data: #Show all of the images we found
-                            img=discord.Embed().set_image(url=uri)
-                            print(f'Found {uri}')
-                            await client.send_message(message.channel,embed=img)
+                        messages=make_card_message(data)
+                        for msg in messages:
+                            await client.send_message(chnl,embed=msg[0],content=msg[1])
                     elif found=='suggs': #If we got a list of suggestions.
                         print(f'Failed to find {name} in {ed}')
                         if len(data)>5: #If there are more than 5 suggestions
                             shuffle(data)
-                            data=data[0:5].sort() #Pick 5 at random
+                            data=data[0:5] #Pick 5 at random
+                            data.sort()
                         msg=f"Couldn't find {capitalise(name)}. Maybe you meant:\n\n" 
                         for name in data: #Add them to a nicely formatted string
                             msg+='\t'+name+'\n'
@@ -103,27 +121,31 @@ async def on_message(message):
 
             else: #No edition was specified
                 if name=='random': #If they want a random card
-                    img=discord.Embed()
-                    img.set_image(url=get_random_uri())
-                    await client.send_message(message.channel,embed=img)
+                    data=get_random_uri()
+                    messages=make_card_message(data)
+                    for msg in messages:
+                        await client.send_message(chnl,embed=msg[0],content=msg[1])
                 elif name=='best card' or name=='the best card': #Kalonian Hydra is the best card.
-                    img=discord.Embed().set_image(url=get_uri('Kalonian Hydra')[0])
+                    data=get_uri('Kalonian Hydra')
+                    messages=make_card_message(data)
+                    for msg in messages:
+                        await client.send_message(chnl,embed=msg[0],content='Kalonian Hydra is the best card.')
                     print('Kalonian Hydra is the best card.')
-                    await client.send_message(message.channel,embed=img)
                 else: #Just a normal card search
-                    uris=get_uri(name)
-                    if uris: #If we found a card
-                        for uri in uris: #Send as many images of the card as we have
-                            img=discord.Embed().set_image(url=uri)
-                            print(f'Found {uri}')
-                            await client.send_message(message.channel,embed=img)
+                    cards=get_uri(name)
+                    if cards: #If we found a card
+                        messages=make_card_message(cards)
+                        for msg in messages:
+                            await client.send_message(chnl,embed=msg[0],content=msg[1])
+                        print(f'Found {cards.name}')
                     else: #No card was found
                         print(f'Failed to find {name}')
                         suggs=get_similar(name) #Find a list of similarly named cards
                         if suggs: #If we got some suggestions
                             if len(suggs)>5: #Cut down to 5 random suggestions.
                                 shuffle(suggs)
-                                suggs=suggs[0:5].sort()
+                                suggs=suggs[0:5]
+                                suggs.sort()
                             msg=f"Couldn't find {capitalise(name)}. Maybe you meant:\n\n" 
                             for name in suggs: #Format suggestions nicely
                                 msg+='\t'+name+'\n'
@@ -162,7 +184,7 @@ async def on_voice_state_update(old,new): #When a user joins a voice channel
         player=vc.create_ffmpeg_player('user_joined.mp3') #Create player
         print('Played sound file in '+str(new.voice.voice_channel))
         player.start() #Play sound
-        sleep(2.7) #Wait for sound to finish
+        sleep(2) #Wait for sound to finish
         await vc.disconnect() #Leave
     else:
         print(old.nick+' left '+str(old.voice.voice_channel)) #Announce that someone left
@@ -175,5 +197,4 @@ async def on_ready():
     print(client.user.id)
     print('---LOG---')
 
-#Connect
-client.run(token)
+client.run(token) #Connect
