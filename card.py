@@ -1,3 +1,4 @@
+from discord import Embed #Used to make messages to send
 
 class Card:
     def __init__(self,names,uris,price):
@@ -11,8 +12,6 @@ class Card:
             self.price='$'+price
         else:
             self.price='Price N/A'
-
-        
 
     @property
     def name(self):
@@ -34,3 +33,16 @@ class Card:
             return self.names[1]
         else:
             return False
+
+    @property
+    def message(self):
+        if self.dfc:
+            img1=Embed().set_image(url=self.uri)
+            msg1=self.name+'\t'+self.price
+            img2=Embed().set_image(url=self.back_uri)
+            msg2=self.back_name
+            return [(img1,msg1),(img2,msg2)]
+        else:
+            img=Embed().set_image(url=self.uri)
+            msg=self.name+'\t'+self.price
+            return [(img,msg)]

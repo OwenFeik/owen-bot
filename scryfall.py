@@ -1,5 +1,6 @@
 import requests
 from card import Card
+from random import shuffle
 
 #Get uri of a cardname query
 def get_uri(query):
@@ -67,4 +68,10 @@ def get_similar(query):
     r=requests.get(request).json() #Get data as json
     if 'status' in r and r['status']==404:  #If card not found return false
         return False
-    return [r['data'][i]['name'] for i in range(0,len(r['data']))] #Otherwise, return a list of similar names
+
+    data=[r['data'][i]['name'] for i in range(0,len(r['data']))]
+    if len(data)>5: #If there are more than 5 suggestions
+        shuffle(data)
+        data=data[0:5] #Pick 5 at random
+        data.sort()
+    return data #Otherwise, return a list of similar names

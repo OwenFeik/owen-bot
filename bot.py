@@ -1,9 +1,8 @@
 #Requires Python 3.6
 
-import discord
-from random import shuffle
-from scryfall import get_uri,get_random_uri,get_similar,get_random_from_set,get_printing
-from time import sleep
+import discord #Run bot
+from scryfall import get_uri,get_random_uri,get_similar,get_random_from_set,get_printing #API call functions
+from time import sleep #Play sound for an appropriate length of time
 
 #Get the client token
 with open('token.txt', 'r') as f:
@@ -21,18 +20,6 @@ def capitalise(name):
         else: #Otherwise, just normal character
             out+=name[i] #To out string
     return out
-
-def make_card_message(card):
-    if card.dfc: #If we got a DFC
-        img1=discord.Embed().set_image(url=card.uri)
-        msg1=card.name+'\t'+card.price
-        img2=discord.Embed().set_image(url=card.back_uri)
-        msg2=card.back_name
-        return [(img1,msg1),(img2,msg2)]
-    else:
-        img=discord.Embed().set_image(url=card.uri)
-        msg=card.name+'\t'+card.price
-        return [(img,msg)]
 
 @client.event
 async def on_message(message):
@@ -93,7 +80,7 @@ async def on_message(message):
                 if name=='random': #If they want random, get random card.
                     data=get_random_from_set(ed)
                     if data:
-                        messages=make_card_message(data)
+                        messages=data.message
                         for msg in messages:
                             await client.send_message(chnl,embed=msg[0],content=msg[1])
                     else: #If we don't get a uri, the search failed and the set doesn't exist.
@@ -101,63 +88,57 @@ async def on_message(message):
                 else: #Otherwise, they want a specific card
                     found,data=get_printing(name,ed) #Found is an indicator of what the call found, data is the data
                     if found=='card': #If we found a card
-                        messages=make_card_message(data)
+                        messages=data.message
                         for msg in messages:
                             await client.send_message(chnl,embed=msg[0],content=msg[1])
                     elif found=='suggs': #If we got a list of suggestions.
-                        print(f'Failed to find {name} in {ed}')
-                        if len(data)>5: #If there are more than 5 suggestions
-                            shuffle(data)
-                            data=data[0:5] #Pick 5 at random
-                            data.sort()
+                        print(f'LOG> Failed to find {name} in {ed}')
                         msg=f"Couldn't find {capitalise(name)}. Maybe you meant:\n\n" 
                         for name in data: #Add them to a nicely formatted string
                             msg+='\t'+name+'\n'
-                        print('Found alternatives.')
+                        print('LOG> Found alternatives.')
                         await client.send_message(message.channel,content=msg[0:len(msg-1)]) #Last char is a newline
                     else: #We didn't get a card or a list of suggestions
-                        print(f'Failed to find {name} in {ed}')
+                        print(f'LOG> Failed to find {name} in {ed}')
                         await client.send_message(message.channel,content=f'{capitalise(name)} not found in {ed} :cry:')
 
             else: #No edition was specified
                 if name=='random': #If they want a random card
                     data=get_random_uri()
-                    messages=make_card_message(data)
+                    messages=data.message
                     for msg in messages:
                         await client.send_message(chnl,embed=msg[0],content=msg[1])
                 elif name=='best card' or name=='the best card': #Kalonian Hydra is the best card.
                     data=get_uri('Kalonian Hydra')
-                    messages=make_card_message(data)
+                    messages=data.message
                     for msg in messages:
                         await client.send_message(chnl,embed=msg[0],content='Kalonian Hydra is the best card.')
-                    print('Kalonian Hydra is the best card.')
+                    print('LOG> Kalonian Hydra is the best card.')
                 else: #Just a normal card search
                     cards=get_uri(name)
                     if cards: #If we found a card
-                        messages=make_card_message(cards)
+                        messages=cards.message
                         for msg in messages:
                             await client.send_message(chnl,embed=msg[0],content=msg[1])
-                        print(f'Found {cards.name}')
+                        print(f'LOG> Found {cards.name}')
                     else: #No card was found
-                        print(f'Failed to find {name}')
+                        print(f'LOG> Failed to find {name}')
                         suggs=get_similar(name) #Find a list of similarly named cards
                         if suggs: #If we got some suggestions
-                            if len(suggs)>5: #Cut down to 5 random suggestions.
-                                shuffle(suggs)
-                                suggs=suggs[0:5]
-                                suggs.sort()
                             msg=f"Couldn't find {capitalise(name)}. Maybe you meant:\n\n" 
                             for name in suggs: #Format suggestions nicely
                                 msg+='\t'+name+'\n'
-                            print('Found alternatives.')
+                            print('LOG> Found alternatives.')
                             await client.send_message(message.channel,content=msg[0:len(msg)-1])
                         else:
                             await client.send_message(message.channel,content=capitalise(name)+' not found :cry:')
 
     #Handles commands (--)
     if message.content.startswith('--'):
-        if message.content.startswith('--all'): #List all commands
-            msg='All commands:\n\n\t--all\n\t--hello\n\t--help\n\t--syntax'
+        if message.content.startswith('--about'): #Info
+            msg="Hi, I'm Owen's bot! I help by finding magic cards for you and playing noises! Message Owen if anything is acting up."
+        elif message.content.startswith('--all'): #List all commands
+            msg='All commands:\n\n\t--about\n\t--all\n\t--hello\n\t--help\n\t--syntax'
         elif message.content.startswith('--easteregg'): #Easter egg
             msg='Smartarse'
         elif message.content.startswith('--hello'): #Hello World
@@ -178,16 +159,22 @@ async def on_voice_state_update(old,new): #When a user joins a voice channel
     
     chnl=new.voice.voice_channel #Voice channel person joined
 
-    if chnl:
-        print(new.nick+' joined '+str(chnl)) #Print the channel and user
-        vc=await client.join_voice_channel(new.voice.voice_channel) #Join the voice channel they joined
-        player=vc.create_ffmpeg_player('user_joined.mp3') #Create player
-        print('Played sound file in '+str(new.voice.voice_channel))
-        player.start() #Play sound
-        sleep(2) #Wait for sound to finish
-        await vc.disconnect() #Leave
+    if chnl: #If they didn't leave a channel
+        if chnl==old.voice_channel: #If they are in the same channel
+            if new.voice.self_deaf:
+                print(new.name+' deafened themself')
+            elif new.voice.self_mute:
+                print(new.name+' muted themself')
+        else:
+            print(new.name+' joined '+str(chnl)) #Print the channel and user
+            vc=await client.join_voice_channel(new.voice.voice_channel) #Join the voice channel they joined
+            player=vc.create_ffmpeg_player('user_joined.mp3') #Create player
+            print('Played sound file in '+str(new.voice.voice_channel))
+            player.start() #Play sound
+            sleep(2) #Wait for sound to finish
+            await vc.disconnect() #Leave
     else:
-        print(old.nick+' left '+str(old.voice.voice_channel)) #Announce that someone left
+        print(old.name+' left '+str(old.voice.voice_channel)) #Announce that someone left
 
 #Startup notification
 @client.event
