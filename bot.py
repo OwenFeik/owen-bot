@@ -169,12 +169,19 @@ async def on_voice_state_update(old,new): #When a user joins a voice channel
             print(new.name+' joined '+str(chnl)) #Print the channel and user
             vc=await client.join_voice_channel(new.voice.voice_channel) #Join the voice channel they joined
             player=vc.create_ffmpeg_player('user_joined.mp3') #Create player
-            print('Played sound file in '+str(new.voice.voice_channel))
+            print('Played user_joined.mp3 in '+str(new.voice.voice_channel))
             player.start() #Play sound
             sleep(2) #Wait for sound to finish
             await vc.disconnect() #Leave
     else:
         print(old.name+' left '+str(old.voice.voice_channel)) #Announce that someone left
+        vc=await client.join_voice_channel(old.voice.voice_channel)
+        player=vc.create_ffmpeg_player('user_left.mp3')
+        print('Played user_left.mp3 in '+str(old.voice.voice_channel))
+        player.start()
+        sleep(2)
+        await vc.disconnect()
+        
 
 #Startup notification
 @client.event

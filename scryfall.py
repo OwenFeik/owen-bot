@@ -12,11 +12,13 @@ def get_uri(query):
         names=[r['card_faces'][i]['name'] for i in range(0,2)]
         uris=[r['card_faces'][i]['image_uris']['normal'] for i in range(0,2)]
         price=r.get('usd')
+
         return Card(names,uris,price)
     
     names=[r['name']]
     uris=[r["image_uris"]["normal"]]
     price=r.get('usd')
+    
     return Card(names,uris,price) #If normal card, get image
 
 
@@ -30,16 +32,19 @@ def get_printing(query,ed):
         return 'suggs',[r['data'][i]['name'] for i in range(0,len(r['data']))] #List of card names to print as suggestions
     else:
         card=r['data'][0]
+        
         if card['layout']=='transform' or card['layout']=='double_faced_token': #If its a DFC get both sides
             names=[card['card_faces'][i]['name'] for i in range(0,2)]
             uris=[card['card_faces'][i]['image_uris']['normal'] for i in range(0,2)]
             price=card['usd']
 
             return 'card',Card(names,uris,price)
-        names=[card['name']]
+        
+        names=[card['name']] #Normal card, give one sided card
         uris=[card['image_uris']['normal']]
         price=card['usd']
-        return 'card',Card(names,uris,price) #Normal card, give card image
+
+        return 'card',Card(names,uris,price) 
 
 #Get a random card uri
 def get_random_uri():
@@ -48,7 +53,7 @@ def get_random_uri():
     names=[r['name']]
     uris=[r['image_uris']['normal']]
     price=r.get('usd')
-    return Card(names,uris,price) #Return the uri of the image
+    return Card(names,uris,price) #Return the card information
 
 #Get a random card froma set
 def get_random_from_set(ed):
@@ -60,7 +65,7 @@ def get_random_from_set(ed):
         names=[r['name']]
         uris=[r['image_uris']['normal']]
         price=r.get('usd')
-        return Card(names,uris,price) #Image of the card
+        return Card(names,uris,price) #Card information
 
 #Get suggestions similar to a card
 def get_similar(query):
@@ -74,4 +79,5 @@ def get_similar(query):
         shuffle(data)
         data=data[0:5] #Pick 5 at random
         data.sort()
+
     return data #Otherwise, return a list of similar names
