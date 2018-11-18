@@ -140,13 +140,12 @@ async def on_message(message):
         if query:
             if query[0]==' ': # They may have put a space before their query
                 query=query[1:]
-            else:    
-                data=get_xkcd(query) # Returns name,uri,alttext
-                msg=data[0]
-                img=discord.Embed().set_image(url=data[1])
-                await client.send_message(message.channel,embed=img,content=msg)
-                msg=data[2]
-                await client.send_message(message.channel,content=msg)
+            data=get_xkcd(query) # Returns name,uri,alttext
+            msg=data[0]
+            img=discord.Embed().set_image(url=data[1])
+            await client.send_message(message.channel,embed=img,content=msg)
+            msg=data[2]
+            await client.send_message(message.channel,content=msg)
         else:
             msg='Use "--xkcd comic" name to find an xkcd comic. Approximate names should be good enough.'
             await client.send_message(message.channel,msg)
