@@ -48,6 +48,7 @@ def update_db():
                 data.append('')
             db.insert_xkcd(data[0],data[1],data[2],data[3]) # Add the (id,name,uri) to the database
             print(f'Added new xkcd comic {data[1]}.')
+    db.close()
 
 def get_list():
     db=Database('xkcd.db')
@@ -67,4 +68,3 @@ def sugg(query):
             best=r
             best_name=name
     return best_name
-    

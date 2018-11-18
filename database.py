@@ -14,6 +14,10 @@ class Database:
     def save(self):
         self.connection.commit()
 
+    def close(self):
+        self.cursor.close()
+        self.connection.close()
+
     def insert_xkcd(self,idno,name,uri,alt):
         self.cursor.execute(f"INSERT INTO xkcds VALUES({idno},'{name}','{uri}','{alt}');")
         self.save()
@@ -52,4 +56,3 @@ class Database:
             else:
                 cap_name+=name[i]
         return cap_name
-        
