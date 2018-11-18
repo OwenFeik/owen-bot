@@ -3,6 +3,7 @@
 import discord #Run bot
 from scryfall import get_uri,get_random_uri,get_similar,get_random_from_set,get_printing #API call functions
 from time import sleep #Play sound for an appropriate length of time
+from xkcd import get_xkcd
 
 #Get the client token
 with open('token.txt', 'r') as f:
@@ -26,7 +27,7 @@ async def on_message(message):
     if message.content:
         print(message.author.name+': '+message.content)
     else:
-        print(message.authot.name+' sent and attachment.')
+        print(message.author.name+' sent an attachment.')
 
     chnl=message.channel
 
@@ -133,8 +134,17 @@ async def on_message(message):
                         else:
                             await client.send_message(message.channel,content=capitalise(name)+' not found :cry:')
 
-    #Handles commands (--)
-    if message.content.startswith('--'):
+    if message.content.startswith('--xkcd'): # If the user wants an xkcd comic
+        query=message.content[6:] # Everything except --xkcd
+        if query[0]==' ': # They may have put a space before their query
+            query=query[1:]
+        data=get_xkcd(query) # Returns name,uri,alttext
+        msg=data[0]
+        img=discord.Embed().set_image(url=data[1])
+        await client.send_message(message.channel,embed=img,content=msg)
+        msg=data[2]
+        await client.send_message(message.channel,content=msg)
+    elif message.content.startswith('--'): # Handles commands (--)
         if message.content.startswith('--about'): #Info
             msg="Hi, I'm Owen's bot! I help by finding magic cards for you and playing noises! Message Owen if anything is acting up."
         elif message.content.startswith('--all'): #List all commands
