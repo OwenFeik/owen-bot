@@ -40,9 +40,12 @@ def update_db():
             else:
                 data.append('')
             alt=re.findall('<img src="[a-z/._]+" title="[^"]+"',src) # Pull the alt text
-            alt=re.findall('title="[^"]+"',alt[0])[0] # Grab the title section of the line
-            alt=alt[7:len(alt)-1] # Trim down to just the text
-            data.append(alt)
+            if alt:
+                alt=re.findall('title="[^"]+"',alt[0])[0] # Grab the title section of the line
+                alt=alt[7:len(alt)-1] # Trim down to just the text
+                data.append(alt)
+            else:
+                data.append('')
             db.insert_xkcd(data[0],data[1],data[2],data[3]) # Add the (id,name,uri) to the database
             print(f'Added new xkcd comic {data[1]}.')
 
