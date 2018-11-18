@@ -67,5 +67,4 @@ def sugg(query):
             best=r
             best_name=name
     return best_name
-
-# update_db()
+    

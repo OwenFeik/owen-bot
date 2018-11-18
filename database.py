@@ -52,7 +52,4 @@ class Database:
             else:
                 cap_name+=name[i]
         return cap_name
-
-# db=Database('xkcd.db')
-# # print(db.get_alt('data pipeline'))
-# print(db.get_xkcd('data pipeline'))
+        

@@ -4,6 +4,7 @@ import discord #Run bot
 from scryfall import get_uri,get_random_uri,get_similar,get_random_from_set,get_printing #API call functions
 from time import sleep #Play sound for an appropriate length of time
 from xkcd import get_xkcd,update_db # Get xkcd comics
+from threading import Timer,Thread # Update xkcds every 24 hours
 
 #Get the client token
 with open('token.txt', 'r') as f:
@@ -136,22 +137,24 @@ async def on_message(message):
 
     if message.content.startswith('--xkcd'): # If the user wants an xkcd comic
         query=message.content[6:] # Everything except --xkcd
-        if query[0]==' ': # They may have put a space before their query
-            query=query[1:]
-        if query=='update': # Allow xkcd database to be updated via discord call
-            update_db()
-        else:    
-            data=get_xkcd(query) # Returns name,uri,alttext
-            msg=data[0]
-            img=discord.Embed().set_image(url=data[1])
-            await client.send_message(message.channel,embed=img,content=msg)
-            msg=data[2]
-            await client.send_message(message.channel,content=msg)
+        if query:
+            if query[0]==' ': # They may have put a space before their query
+                query=query[1:]
+            else:    
+                data=get_xkcd(query) # Returns name,uri,alttext
+                msg=data[0]
+                img=discord.Embed().set_image(url=data[1])
+                await client.send_message(message.channel,embed=img,content=msg)
+                msg=data[2]
+                await client.send_message(message.channel,content=msg)
+        else:
+            msg='Use "--xkcd comic" name to find an xkcd comic. Approximate names should be good enough.'
+            await client.send_message(message.channel,msg)
     elif message.content.startswith('--'): # Handles commands (--)
         if message.content.startswith('--about'): #Info
             msg="Hi, I'm Owen's bot! I help by finding magic cards for you and playing noises! Message Owen if anything is acting up."
         elif message.content.startswith('--all'): #List all commands
-            msg='All commands:\n\n\t--about\n\t--all\n\t--hello\n\t--help\n\t--syntax'
+            msg='All commands:\n\n\t--about\n\t--all\n\t--hello\n\t--help\n\t--syntax\n\t--xkcd'
         elif message.content.startswith('--easteregg'): #Easter egg
             msg='Smartarse'
         elif message.content.startswith('--hello'): #Hello World
@@ -194,7 +197,11 @@ async def on_voice_state_update(old,new): #When a user joins a voice channel
         player.start()
         sleep(2)
         await vc.disconnect()
-        
+
+def update_xkcds_daily(): # This will update the xkcd database every 24 hours. It will be innacessible during this time, but normally this should only take a couple seconds.
+    update_db()
+    next_day_event=Timer(86400,update_xkcds_daily)
+    next_day_event.start()
 
 #Startup notification
 @client.event
@@ -203,5 +210,6 @@ async def on_ready():
     print(client.user.name)
     print(client.user.id)
     print('---LOG---')
+    Thread(target=update_xkcds_daily).start()
 
 client.run(token) #Connect
