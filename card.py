@@ -27,6 +27,7 @@ class Card:
             return self.uris[1]
         else:
             return False
+            
     @property
     def back_name(self):
         if self.dfc:

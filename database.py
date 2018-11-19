@@ -1,5 +1,6 @@
-import sqlite3 as sqlite
-from sqlite3 import Error
+import sqlite3 as sqlite # Database
+from sqlite3 import Error # Database error handling
+from random import randint # Get random xkcd
 
 class Database:
     def __init__(self,db_file):
@@ -7,7 +8,7 @@ class Database:
             self.connection=sqlite.connect(db_file)
             self.cursor=self.connection.cursor()
         except Error as e:
-            print(e)
+            print(f'LOG> xkcd database error: {str(e)}')
             self.connection=None
             self.cursor=None
 
@@ -29,11 +30,28 @@ class Database:
     def get_xkcd(self,name):
         self.cursor.execute(f"SELECT name,uri,alt FROM xkcds WHERE name='{name}';")
         data=self.cursor.fetchone()
-        name=self.capitalise_name(data[0])
+        name=self.repair_string(data[0])
+        name=self.capitalise_name(name)
         uri=data[1]
-        alt=self.repair_alt(data[2])
+        alt=self.repair_string(data[2])
         return name,uri,alt
     
+    def get_random(self): # Get a random xkcd
+        self.cursor.execute(f'SELECT COUNT(*) FROM xkcds;') # Number of rows in xkcd tables
+        count=self.cursor.fetchone()[0]
+        comic=randint(1,count) # Pick a random number from 1 to the number of xkcds
+        self.cursor.execute(f'SELECT name,uri,alt FROM xkcds WHERE id={str(comic)};') # Grab the xkcd with this id
+        try:
+            data=self.cursor.fetchone()
+            name=self.repair_string(data[0])
+            name=self.capitalise_name(name)
+            uri=data[1]
+            alt=self.repair_string(data[2])
+            return name,uri,alt
+        except TypeError: # In the event we don't have this comic for whatever reason a TypeError is thrown due to a NoneType. We'll just re-roll
+            print(f'LOG> Missing xkcd #{str(comic)}.')
+            return self.get_random()
+
     def get_uri(self,name):
         self.cursor.execute(f"SELECT uri FROM xkcds WHERE name='{name}';")
         return self.cursor.fetchone()[0]
@@ -44,8 +62,8 @@ class Database:
         return alt
     
     @staticmethod
-    def repair_alt(alt): # Replace the ' and " placeholders in alt text with appropriate characters
-        return alt.replace('&#39;',"'").replace('&quot;','"') 
+    def repair_string(string): # Replace the ' and " placeholders in alt text with appropriate characters
+        return string.replace('&#39;',"'").replace('&quot;','"') 
     
     @staticmethod
     def capitalise_name(name): # Capitalise a comic name

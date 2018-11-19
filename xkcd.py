@@ -6,7 +6,9 @@ from database import Database # Database used to hold information on comics
 def get_xkcd(query):
     db=Database('xkcd.db')
     query=query.lower()
-    if list_check(query): # If there is a comic of this name
+    if query=='random':
+        return db.get_random()
+    elif list_check(query): # If there is a comic of this name
         return db.get_xkcd(query)
     return db.get_xkcd(sugg(query)) # Otherwise find a similar one
 
@@ -14,7 +16,7 @@ def update_db():
     current=get_list() # list of comics currently in the database
     db=Database('xkcd.db')
     r=requests.get('https://xkcd.com/archive/') # Grab the archive page, a list of all xkcd comics
-    raw_names=re.findall('[0-9]{0,4}/" title="[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}">[a-zA-Z ]+<',r.content.decode()) # Grab sections of html containing names
+    raw_names=re.findall('[0-9]{0,4}/" title="[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}">[^<>]+<',r.content.decode()) # Grab sections of html containing names
     for name in raw_names:
         temp=''
         data=[]
@@ -25,7 +27,7 @@ def update_db():
             elif c=='>': # > is the beginning of the name
                 temp=''
             elif c=='<': # < is the end of the name
-                data.append(temp.lower())
+                data.append(temp.lower().replace('\'','&#39;')) # &#39; is a placeholder for ' for it to work in the database
             else:
                 temp+=c
 
@@ -47,8 +49,9 @@ def update_db():
             else:
                 data.append('')
             db.insert_xkcd(data[0],data[1],data[2],data[3]) # Add the (id,name,uri) to the database
-            print(f'Added new xkcd comic {data[1]}.')
+            print(f'LOG> Added new xkcd comic {data[1]}.')
     db.close()
+    print('LOG> xkcd database up to date!')
 
 def get_list():
     db=Database('xkcd.db')
