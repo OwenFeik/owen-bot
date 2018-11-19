@@ -7,6 +7,7 @@ class Database:
         try:
             self.connection=sqlite.connect(db_file)
             self.cursor=self.connection.cursor()
+            self.cursor.execute('CREATE TABLE IF NOT EXISTS xkcds(id INTEGER PRIMARY KEY, name TEXT, uri TEXT, alt TEXT);')
         except Error as e:
             print(f'LOG> xkcd database error: {str(e)}')
             self.connection=None
