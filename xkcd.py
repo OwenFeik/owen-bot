@@ -34,14 +34,14 @@ def update_db():
         if not (data[1] in current): # If we don't have this comic
             r=requests.get('https://xkcd.com/'+str(data[0])) # Get the individual comic page
             src=r.content.decode()
-            uri=re.findall('https://imgs.xkcd.com/comics/[a-z_.]+\n',src) # Pull the permalink
+            uri=re.findall('https://imgs.xkcd.com/comics/[a-z._-]+\n',src) # Pull the permalink
             if uri:
                 uri=uri[0]
                 uri=uri[:len(uri)-1] # Cut off the newline character
                 data.append(uri)
             else:
                 data.append('')
-            alt=re.findall('<img src="[a-z/._]+" title="[^"]+"',src) # Pull the alt text
+            alt=re.findall('<img src="[a-z/._-]+" title="[^"]+"',src) # Pull the alt text
             if alt:
                 alt=re.findall('title="[^"]+"',alt[0])[0] # Grab the title section of the line
                 alt=alt[7:len(alt)-1] # Trim down to just the text
