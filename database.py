@@ -20,8 +20,8 @@ class Database:
         self.cursor.close()
         self.connection.close()
 
-    def insert_xkcd(self,idno,name,uri,alt):
-        self.cursor.execute(f"INSERT INTO xkcds VALUES({idno},'{name}','{uri}','{alt}');")
+    def insert_xkcd(self,xkcd): # Add an xkcd object to the database
+        self.cursor.execute(f"INSERT INTO xkcds VALUES({xkcd.idno},'{xkcd.name}','{xkcd.uri}','{xkcd.alt}');")
         self.save()
     
     def get_list(self):

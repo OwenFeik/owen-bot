@@ -5,6 +5,7 @@ from scryfall import get_queries #API call functions
 from time import sleep #Play sound for an appropriate length of time
 from xkcd import get_xkcd,update_db # Get xkcd comics
 from threading import Timer,Thread # Update xkcds every 24 hours
+import asyncio # Used to run database updates
 
 client = discord.Client() #Create the client.
 
@@ -23,8 +24,7 @@ async def on_message(message):
     if '[' in message.content and ']' in message.content:
         queries=get_queries(message.content) # A list of query objects
         for query in queries:
-            query.resolve() # Conduct api calls and populate the query
-            found=query.found # Grab whatever we found
+            found=query.found # Grab whatever we found, resolving the query in the process
             if type(found)==str: # If it's just a string message, send it
                 await client.send_message(message.channel,content=found)
             else: # If it's a card object, grab the message and send it
@@ -96,7 +96,7 @@ async def on_voice_state_update(old,new): #When a user joins a voice channel
             await vc.disconnect()
 
 def update_xkcds_daily(): # This will update the xkcd database every 24 hours.
-    update_db()
+    asyncio.new_event_loop().run_until_complete(update_db())
     next_day_event=Timer(86400,update_xkcds_daily)
     next_day_event.start()
 
@@ -109,8 +109,9 @@ async def on_ready():
     print(client.user.id)
     print('---LOG---')
 
-
-with open('token.txt', 'r') as f: #Get the client token
-    token = f.read()
-
-client.run(token) #Connect
+try:
+    with open('token.txt', 'r') as f: #Get the client token
+        token = f.read()
+    client.run(token) #Connect
+except FileNotFoundError:
+    print('Create a token.txt file with your bots authtoken!')
