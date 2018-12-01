@@ -20,6 +20,11 @@ class Database:
         self.cursor.close()
         self.connection.close()
 
+    @property
+    def count(self):
+        self.cursor.execute(f'SELECT COUNT(*) FROM xkcds;') # Number of rows in xkcd table
+        return self.cursor.fetchone()[0]
+
     def insert_xkcd(self,xkcd): # Add an xkcd object to the database
         self.cursor.execute(f"INSERT INTO xkcds VALUES({xkcd.idno},'{xkcd.name}','{xkcd.uri}','{xkcd.alt}');")
         self.save()
@@ -30,38 +35,30 @@ class Database:
 
     def get_xkcd(self,name):
         self.cursor.execute(f"SELECT name,uri,alt FROM xkcds WHERE name='{name}';")
-        data=self.cursor.fetchone()
+        return self.interpret(self.cursor.fetchone())
+        
+    def get_random(self): # Get a random xkcd
+        self.cursor.execute('SELECT max(id) FROM xkcds;') # The db fills back from the newest
+        newest=self.cursor.fetchone()[0] # So we'll have issues if we try to call from the full range
+        comic=randint(newest-self.count,newest) # Pick a random number from count to the number of xkcds
+        self.cursor.execute(f'SELECT name,uri,alt FROM xkcds WHERE id={str(comic)};') # Grab the xkcd with this id
+        try:
+            return self.interpret(self.cursor.fetchone())
+        except TypeError: # In the event we don't have this comic for whatever reason a TypeError is thrown due to a NoneType. We'll just re-roll
+            print(f'LOG> Missing xkcd #{str(comic)}.')
+            return self.get_random()
+
+    def get_newest(self):
+        self.cursor.execute('SELECT name,uri,alt,max(id) FROM xkcds;') # Grab the xkcd with the maximum id, as they are numbered sequentially
+        return self.interpret(self.cursor.fetchone())
+    
+    def interpret(self,data):
         name=self.repair_string(data[0])
         name=self.capitalise_name(name)
         uri=data[1]
         alt=self.repair_string(data[2])
         return name,uri,alt
-    
-    def get_random(self): # Get a random xkcd
-        self.cursor.execute(f'SELECT COUNT(*) FROM xkcds;') # Number of rows in xkcd tables
-        count=self.cursor.fetchone()[0]
-        comic=randint(1,count) # Pick a random number from 1 to the number of xkcds
-        self.cursor.execute(f'SELECT name,uri,alt FROM xkcds WHERE id={str(comic)};') # Grab the xkcd with this id
-        try:
-            data=self.cursor.fetchone()
-            name=self.repair_string(data[0])
-            name=self.capitalise_name(name)
-            uri=data[1]
-            alt=self.repair_string(data[2])
-            return name,uri,alt
-        except TypeError: # In the event we don't have this comic for whatever reason a TypeError is thrown due to a NoneType. We'll just re-roll
-            print(f'LOG> Missing xkcd #{str(comic)}.')
-            return self.get_random()
 
-    def get_uri(self,name):
-        self.cursor.execute(f"SELECT uri FROM xkcds WHERE name='{name}';")
-        return self.cursor.fetchone()[0]
-    
-    def get_alt(self,name):
-        self.cursor.execute(f"SELECT alt FROM xkcds WHERE name='{name}';")
-        alt=self.cursor.fetchone()[0].replace('&#39;','\'').replace('&quot;','"') # Replace the ' and " placeholders with appropriate characters
-        return alt
-    
     @staticmethod
     def repair_string(string): # Replace the ' and " placeholders in alt text with appropriate characters
         return string.replace('&#39;',"'").replace('&quot;','"') 

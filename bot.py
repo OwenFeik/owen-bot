@@ -95,15 +95,15 @@ async def on_voice_state_update(old,new): #When a user joins a voice channel
             sleep(2)
             await vc.disconnect()
 
-def update_xkcds_daily(): # This will update the xkcd database every 24 hours.
+def update_xkcds_schedule(): # This will update the xkcd database regularly.
     asyncio.new_event_loop().run_until_complete(update_db())
-    next_day_event=Timer(86400,update_xkcds_daily)
+    next_day_event=Timer(3600,update_xkcds_schedule)
     next_day_event.start()
 
 #Startup notification
 @client.event
 async def on_ready():
-    Thread(target=update_xkcds_daily).start() # Daily event to update xkcd database
+    Thread(target=update_xkcds_schedule).start() # Daily event to update xkcd database
     print('Logged in as')
     print(client.user.name)
     print(client.user.id)

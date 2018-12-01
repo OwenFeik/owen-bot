@@ -48,6 +48,8 @@ def get_xkcd(query):
     query=query.lower()
     if query=='random':
         return db.get_random()
+    elif query in ['new','newest']:
+        return db.get_newest()
     elif list_check(query): # If there is a comic of this name
         return db.get_xkcd(query)
     return db.get_xkcd(sugg(query)) # Otherwise find a similar one
