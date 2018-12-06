@@ -2,8 +2,8 @@
 
 import discord #Run bot
 from scryfall import get_queries #API call functions
-from time import sleep #Play sound for an appropriate length of time
-from xkcd import get_xkcd,update_db # Get xkcd comics
+import time #Play sound for an appropriate length of time, log time of events
+import xkcd # Get xkcd comics, update database
 from threading import Timer,Thread # Update xkcds every 24 hours
 import asyncio # Used to run database updates
 
@@ -37,7 +37,7 @@ async def on_message(message):
         if query:
             if query[0]==' ': # They may have put a space before their query
                 query=query[1:]
-            data=get_xkcd(query) # Returns name,uri,alttext
+            data=xkcd.get_xkcd(query) # Returns name,uri,alttext
             msg=data[0]
             img=discord.Embed().set_image(url=data[1])
             await client.send_message(message.channel,embed=img,content=msg)
@@ -81,22 +81,25 @@ async def on_voice_state_update(old,new): #When a user joins a voice channel
             print(new.name+' joined '+str(chnl)) #Print the channel and user
             vc=await client.join_voice_channel(new.voice.voice_channel) #Join the voice channel they joined
             player=vc.create_ffmpeg_player('user_joined.mp3') #Create player
-            print('LOG> Played user_joined.mp3 in '+str(new.voice.voice_channel))
+            log_message('Played user_joined.mp3 in '+str(new.voice.voice_channel))
             player.start() #Play sound
-            sleep(2) #Wait for sound to finish
+            time.sleep(2) #Wait for sound to finish
             await vc.disconnect() #Leave
     else:
         if old.voice.voice_channel.voice_members: # Only play sound if the channel still has people in it
             print(old.name+' left '+str(old.voice.voice_channel)) #Announce that someone left
             vc=await client.join_voice_channel(old.voice.voice_channel)
             player=vc.create_ffmpeg_player('user_left.mp3')
-            print('LOG> Played user_left.mp3 in '+str(old.voice.voice_channel))
+            log_message('Played user_left.mp3 in '+str(old.voice.voice_channel))
             player.start()
-            sleep(2)
+            time.sleep(2)
             await vc.disconnect()
 
+def log_message(msg):
+    print('LOG '+time.strftime('%H:%M',time.localtime(time.time()))+'>'+msg)
+
 def update_xkcds_schedule(): # This will update the xkcd database regularly.
-    asyncio.new_event_loop().run_until_complete(update_db())
+    asyncio.new_event_loop().run_until_complete(xkcd.update_db())
     next_day_event=Timer(3600,update_xkcds_schedule)
     next_day_event.start()
 
@@ -109,9 +112,9 @@ async def on_ready():
     print(client.user.id)
     print('---LOG---')
 
-try:
-    with open('token.txt', 'r') as f: #Get the client token
-        token = f.read()
-    client.run(token) #Connect
-except FileNotFoundError:
-    print('Create a token.txt file with your bots authtoken!')
+# try:
+#     with open('token.txt', 'r') as f: #Get the client token
+#         token = f.read()
+#     client.run(token) #Connect
+# except FileNotFoundError:
+#     print('Create a token.txt file with your bots authtoken!')

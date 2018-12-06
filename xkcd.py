@@ -3,6 +3,7 @@ import re # Parse xkcd html for relevant data
 import asyncio # More efficiently collect xkcds
 from difflib import SequenceMatcher # Get similarly named comics
 from database import Database # Database used to hold information on comics
+from bot import log_message
 
 class xkcd():
     def __init__(self,idno=0,name='',uri='',alt=''):
@@ -70,10 +71,10 @@ async def update_db():
     for call in calls: # Run calls
         strip=await call # By using async, mitigate waiting on xkcd server
         db.insert_xkcd(strip) # Add to db
-        print(f'LOG> Added new xkcd comic {strip.name}.')
+        log_message(f'Added new xkcd comic {strip.name}.')
     
     db.close()
-    print('LOG> xkcd database up to date!')
+    log_message('xkcd database up to date!')
 
 def get_list():
     db=Database('xkcd.db')

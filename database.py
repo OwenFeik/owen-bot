@@ -1,6 +1,7 @@
 import sqlite3 as sqlite # Database
 from sqlite3 import Error # Database error handling
 from random import randint # Get random xkcd
+from bot import log_message # Log events
 
 class Database:
     def __init__(self,db_file):
@@ -9,7 +10,7 @@ class Database:
             self.cursor=self.connection.cursor()
             self.cursor.execute('CREATE TABLE IF NOT EXISTS xkcds(id INTEGER PRIMARY KEY, name TEXT, uri TEXT, alt TEXT);')
         except Error as e:
-            print(f'LOG> xkcd database error: {str(e)}')
+            log_message('xkcd database error: '+str(e))
             self.connection=None
             self.cursor=None
 
@@ -45,7 +46,7 @@ class Database:
         try:
             return self.interpret(self.cursor.fetchone())
         except TypeError: # In the event we don't have this comic for whatever reason a TypeError is thrown due to a NoneType. We'll just re-roll
-            print(f'LOG> Missing xkcd #{str(comic)}.')
+            log_message('Missing xkcd #'+str(comic))
             return self.get_random()
 
     def get_newest(self):
