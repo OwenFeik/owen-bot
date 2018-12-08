@@ -64,8 +64,8 @@ class Database:
 def interpret(data):
     name=f'{repair_string(data[1])} | {str(data[0])}'
     name=capitalise_name(name)
-    uri=data[1]
-    alt=repair_string(data[2])
+    uri=data[2]
+    alt=repair_string(data[3])
     return name,uri,alt
 
 def repair_string(string): # Replace the ' and " placeholders in alt text with appropriate characters
@@ -79,4 +79,3 @@ def capitalise_name(name): # Capitalise a comic name
         else:
             cap_name+=name[i]
     return cap_name
-    

@@ -105,7 +105,7 @@ def update_xkcds_schedule(): # This will update the xkcd database regularly.
 #Startup notification
 @client.event
 async def on_ready():
-    Thread(target=update_xkcds_schedule).start() # Daily event to update xkcd database
+    # Thread(target=update_xkcds_schedule).start() # Daily event to update xkcd database
     print('Logged in as')
     print(client.user.name)
     print(client.user.id)
