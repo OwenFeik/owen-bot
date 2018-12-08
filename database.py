@@ -34,14 +34,14 @@ class Database:
         return [item[0] for item in self.cursor.fetchall()]
 
     def get_xkcd(self,name):
-        self.cursor.execute(f"SELECT name,uri,alt FROM xkcds WHERE name='{name}';")
+        self.cursor.execute(f"SELECT id,name,uri,alt FROM xkcds WHERE name='{name}';")
         return interpret(self.cursor.fetchone())
         
     def get_random(self): # Get a random xkcd
         self.cursor.execute('SELECT max(id) FROM xkcds;') # The db fills back from the newest
         newest=self.cursor.fetchone()[0] # So we'll have issues if we try to call from the full range
         comic=randint(newest-self.count(),newest) # Pick a random number from count to the number of xkcds
-        self.cursor.execute(f'SELECT name,uri,alt FROM xkcds WHERE id={str(comic)};') # Grab the xkcd with this id
+        self.cursor.execute(f'SELECT id,name,uri,alt FROM xkcds WHERE id={str(comic)};') # Grab the xkcd with this id
         try:
             return interpret(self.cursor.fetchone())
         except TypeError: # In the event we don't have this comic for whatever reason a TypeError is thrown due to a NoneType. We'll just re-roll
@@ -49,11 +49,11 @@ class Database:
             return self.get_random()
 
     def get_newest(self):
-        self.cursor.execute('SELECT name,uri,alt,max(id) FROM xkcds;') # Grab the xkcd with the maximum id, as they are numbered sequentially
+        self.cursor.execute('SELECT id,name,uri,alt,max(id) FROM xkcds;') # Grab the xkcd with the maximum id, as they are numbered sequentially
         return interpret(self.cursor.fetchone())
 
     def get_id(self,idno): # Get an xkcd from id
-        self.cursor.execute(f'SELECT name,uri,alt FROM xkcds WHERE id={idno};')
+        self.cursor.execute(f'SELECT id,name,uri,alt FROM xkcds WHERE id={idno};')
         data=self.cursor.fetchone()
         if data: # If we have the xkcd with this id
             return interpret(data)
@@ -62,7 +62,7 @@ class Database:
 
 
 def interpret(data):
-    name=repair_string(data[0])
+    name=f'{repair_string(data[1])} | {str(data[0])}'
     name=capitalise_name(name)
     uri=data[1]
     alt=repair_string(data[2])
@@ -79,3 +79,4 @@ def capitalise_name(name): # Capitalise a comic name
         else:
             cap_name+=name[i]
     return cap_name
+    

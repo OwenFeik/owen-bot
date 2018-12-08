@@ -111,9 +111,9 @@ async def on_ready():
     print(client.user.id)
     print('---LOG---')
 
-# try:
-#     with open('token.txt', 'r') as f: #Get the client token
-#         token = f.read()
-#     client.run(token) #Connect
-# except FileNotFoundError:
-#     print('Create a token.txt file with your bots authtoken!')
+try:
+    with open('token.txt', 'r') as f: #Get the client token
+        token = f.read()
+    client.run(token) #Connect
+except FileNotFoundError:
+    print('Create a token.txt file with your bots authtoken!')
