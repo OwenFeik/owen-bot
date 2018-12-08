@@ -2,10 +2,11 @@
 
 import discord #Run bot
 from scryfall import get_queries #API call functions
-import time #Play sound for an appropriate length of time, log time of events
+from time import sleep #Play sound for an appropriate length of time
 import xkcd # Get xkcd comics, update database
 from threading import Timer,Thread # Update xkcds every 24 hours
 import asyncio # Used to run database updates
+from utilities import log_message # Send formatted log messages
 
 client = discord.Client() #Create the client.
 
@@ -83,7 +84,7 @@ async def on_voice_state_update(old,new): #When a user joins a voice channel
             player=vc.create_ffmpeg_player('user_joined.mp3') #Create player
             log_message('Played user_joined.mp3 in '+str(new.voice.voice_channel))
             player.start() #Play sound
-            time.sleep(2) #Wait for sound to finish
+            sleep(2) #Wait for sound to finish
             await vc.disconnect() #Leave
     else:
         if old.voice.voice_channel.voice_members: # Only play sound if the channel still has people in it
@@ -92,11 +93,9 @@ async def on_voice_state_update(old,new): #When a user joins a voice channel
             player=vc.create_ffmpeg_player('user_left.mp3')
             log_message('Played user_left.mp3 in '+str(old.voice.voice_channel))
             player.start()
-            time.sleep(2)
+            sleep(2)
             await vc.disconnect()
 
-def log_message(msg):
-    print('LOG '+time.strftime('%H:%M',time.localtime(time.time()))+'>'+msg)
 
 def update_xkcds_schedule(): # This will update the xkcd database regularly.
     asyncio.new_event_loop().run_until_complete(xkcd.update_db())

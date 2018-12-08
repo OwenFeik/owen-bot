@@ -3,7 +3,7 @@ import re # Parse xkcd html for relevant data
 import asyncio # More efficiently collect xkcds
 from difflib import SequenceMatcher # Get similarly named comics
 from database import Database # Database used to hold information on comics
-from bot import log_message
+from utilities import log_message # Send messages in the log
 
 class xkcd():
     def __init__(self,idno=0,name='',uri='',alt=''):
@@ -51,6 +51,8 @@ def get_xkcd(query):
         return db.get_random()
     elif query in ['new','newest']:
         return db.get_newest()
+    elif query.isnumeric():
+        return db.get_id(query)
     elif list_check(query): # If there is a comic of this name
         return db.get_xkcd(query)
     return db.get_xkcd(sugg(query)) # Otherwise find a similar one
@@ -76,11 +78,11 @@ async def update_db():
     db.close()
     log_message('xkcd database up to date!')
 
-def get_list():
+def get_list(): # Grab the list of names of xkcds
     db=Database('xkcd.db')
     return db.get_list()
 
-def list_check(query):
+def list_check(query): # Ensure we have the xkcd of name 'query'
     if query in get_list():
         return True
     return False
