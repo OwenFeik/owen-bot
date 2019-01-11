@@ -1,14 +1,15 @@
 import requests # Grab card data from scryfall
+import re # Find queries in a message
 from card import Card # Pass objects to the bot
 from random import randint,shuffle # used to return a random sample of suggestions
 
 # A query object allows the bot to prearrange api calls and then execute them as necessary
 class Query():
-    def __init__(self,query,ed=None):
+    def __init__(self,query=None,ed=None,msg=None):
         self.query=query
         self.ed=ed
+        self.msg=msg
         self.card=None
-        self.msg=None
 
     def resolve(self):
         if self.query=='random':
@@ -48,7 +49,9 @@ class Query():
     
     @property
     def found(self):
-        self.resolve()
+        if not self.card and not self.msg:
+            self.resolve()
+
         if self.card:
             return self.card
         elif self.msg:
@@ -59,33 +62,27 @@ class Query():
 
 # Return query objects for each card found in the message
 def get_queries(message):
-    #Iterate through the message to find all card names
     queries=[]
-    is_query=False
-    is_set=False
-    card_name=''
-    set_name=''
-    for c in message: #Iterate through characters in the string
-        if c=='[': #Card tags are [] [ is the open tag
-            is_query=True
-        elif c==']': #Close the card tag
-            if set_name:
-                queries.append(Query(clean_query(card_name.lower()),clean_query(set_name.upper())))
+    for q in re.findall('\[[^\[\]]+\]',message): # Grab all [card tags]
+        q=q.replace('[','').replace(']','') # Remove the [] so we can work with the name and set 
+        if q=='': # If this search is blank, just ignore it
+            continue
+        elif '|' in q: # If it has a set filter
+            if q.count('|')>1: # Only 1 set filter allowed
+                queries.append(Query(msg='Multiple sets specified, when only one is allowed. Please try again.'))
             else:
-                queries.append(Query(clean_query(card_name.lower())))
-            is_query=False
-            is_set=False
-            card_name=''
-            set_name=''
-        elif c=='|': #This (|) indicates there is a set
-            is_query=False
-            is_set=True
-        elif is_set:
-            set_name+=c
-        elif is_query:
-            card_name+=c
+                q=q.split('|') # Divide into name (q[0]) and set (q[1])
+                if not '' in q: # If we have both a name and a set
+                    queries.append(Query(q[0],q[1]))
+                else:
+                    if q[0]=='': # If we only have a set grab a random card from that set
+                        queries.append(Query('random',q[1]))
+                    else: # If we have no set, just search for the card
+                        queries.append(Query(q[0]))
+        else:
+            queries.append(Query(q)) # Everything is normal, just query for the name
 
-    return queries
+    return queries                    
 
 # Conduct all necessary api calls to return uris immediately
 def get_cards(message):
@@ -193,6 +190,8 @@ def capitalise(name):
     return out
 
 def clean_query(string): # Remove spaces from the start and end of a string
+    if string=='':
+        return string
     if string[0]==' ':
         string=string[1:] 
     if string[len(string)-1]==' ':

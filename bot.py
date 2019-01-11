@@ -105,7 +105,7 @@ def update_xkcds_schedule(): # This will update the xkcd database regularly.
 #Startup notification
 @client.event
 async def on_ready():
-    # Thread(target=update_xkcds_schedule).start() # Daily event to update xkcd database
+    Thread(target=update_xkcds_schedule).start() # Daily event to update xkcd database
     print('Logged in as')
     print(client.user.name)
     print(client.user.id)
@@ -113,7 +113,7 @@ async def on_ready():
 
 try:
     with open('token.txt', 'r') as f: #Get the client token
-        token = f.read()
+        token = f.read().replace('\n','') # Remove newlines if there are any
     client.run(token) #Connect
 except FileNotFoundError:
     print('Create a token.txt file with your bots authtoken!')

@@ -61,8 +61,8 @@ class Database:
             return self.get_xkcd('not available')
 
 
-def interpret(data):
-    name=f'{repair_string(data[1])} | {str(data[0])}'
+def interpret(data): # Clean up the data for sending in discord
+    name=f'{repair_string(data[1])} | {str(data[0])}' # Title + id line
     name=capitalise_name(name)
     uri=data[2]
     alt=repair_string(data[3])
