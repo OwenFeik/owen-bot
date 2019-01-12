@@ -189,7 +189,8 @@ def capitalise(name):
             out+=name[i] #To out string
     return out
 
-def clean_query(string): # Remove spaces from the start and end of a string
+# Remove spaces from the start and end of a string
+def clean_query(string):
     if string=='':
         return string
     if string[0]==' ':

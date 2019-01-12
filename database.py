@@ -10,7 +10,7 @@ class Database:
             self.cursor=self.connection.cursor()
             self.cursor.execute('CREATE TABLE IF NOT EXISTS xkcds(id INTEGER PRIMARY KEY, name TEXT, uri TEXT, alt TEXT);')
         except Error as e:
-            log_message('xkcd database error: '+str(e))
+            log_message('Database error: '+str(e))
             self.connection=None
             self.cursor=None
 
@@ -21,7 +21,7 @@ class Database:
         self.cursor.close()
         self.connection.close()
 
-    def count(self):
+    def xkcd_count(self):
         self.cursor.execute(f'SELECT COUNT(*) FROM xkcds;') # Number of rows in xkcd table
         return self.cursor.fetchone()[0]
 
@@ -29,39 +29,39 @@ class Database:
         self.cursor.execute(f"INSERT INTO xkcds VALUES({xkcd.idno},'{xkcd.name}','{xkcd.uri}','{xkcd.alt}');")
         self.save()
     
-    def get_list(self):
+    def get_xkcd_list(self):
         self.cursor.execute(f'SELECT name FROM xkcds;')
         return [item[0] for item in self.cursor.fetchall()]
 
     def get_xkcd(self,name):
         self.cursor.execute(f"SELECT id,name,uri,alt FROM xkcds WHERE name='{name}';")
-        return interpret(self.cursor.fetchone())
+        return interpret_xkcd(self.cursor.fetchone())
         
-    def get_random(self): # Get a random xkcd
+    def get_random_xkcd(self): # Get a random xkcd
         self.cursor.execute('SELECT max(id) FROM xkcds;') # The db fills back from the newest
         newest=self.cursor.fetchone()[0] # So we'll have issues if we try to call from the full range
-        comic=randint(newest-self.count(),newest) # Pick a random number from count to the number of xkcds
+        comic=randint(newest-self.xkcd_count(),newest) # Pick a random number from count to the number of xkcds
         self.cursor.execute(f'SELECT id,name,uri,alt FROM xkcds WHERE id={str(comic)};') # Grab the xkcd with this id
         try:
-            return interpret(self.cursor.fetchone())
+            return interpret_xkcd(self.cursor.fetchone())
         except TypeError: # In the event we don't have this comic for whatever reason a TypeError is thrown due to a NoneType. We'll just re-roll
             log_message('Missing xkcd #'+str(comic))
-            return self.get_random()
+            return self.get_random_xkcd()
 
-    def get_newest(self):
+    def get_newest_xkcd(self):
         self.cursor.execute('SELECT id,name,uri,alt,max(id) FROM xkcds;') # Grab the xkcd with the maximum id, as they are numbered sequentially
-        return interpret(self.cursor.fetchone())
+        return interpret_xkcd(self.cursor.fetchone())
 
     def get_id(self,idno): # Get an xkcd from id
         self.cursor.execute(f'SELECT id,name,uri,alt FROM xkcds WHERE id={idno};')
         data=self.cursor.fetchone()
         if data: # If we have the xkcd with this id
-            return interpret(data)
+            return interpret_xkcd(data)
         else: # Otherwise, show 404 image
             return self.get_xkcd('not available')
 
 
-def interpret(data): # Clean up the data for sending in discord
+def interpret_xkcd(data): # Clean up the data for sending in discord
     name=f'{repair_string(data[1])} | {str(data[0])}' # Title + id line
     name=capitalise_name(name)
     uri=data[2]
