@@ -7,6 +7,7 @@ import xkcd # Get xkcd comics, update database
 from threading import Timer,Thread # Update xkcds every 24 hours
 import asyncio # Used to run database updates
 from utilities import log_message # Send formatted log messages
+from remindme import handle_message # Handle reminder requests
 
 client = discord.Client() #Create the client.
 
@@ -58,9 +59,11 @@ async def on_message(message):
             msg=f'Greetings, {message.author.mention}'
         elif message.content.startswith('--help'): #Offer assistance
             msg='Use [Card Name] to call me! Try --all or --syntax for more info.'
-        elif message.content.startswith('--syntax'): #Breakdown of bot syntax
+        elif message.content.startswith('--remindme'): # Set up a reminder for the user
+            msg=handle_message(message)
+        elif message.content.startswith('--syntax'): # Breakdown of bot syntax
             msg='Syntax overview:\n\n\tCall a --command.\n\tFind a [card] like this.\n\tFind a specific [printing|like this]\n\tGet a [random] card.'
-        else: #Otherwise, their command is invalid
+        else: # Otherwise, their command is invalid
             msg='OwO, what\'s this? I don\'t understand that! Maybe try --help'
         await client.send_message(message.channel,msg)
 

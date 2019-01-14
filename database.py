@@ -9,6 +9,7 @@ class Database:
             self.connection=sqlite.connect(db_file)
             self.cursor=self.connection.cursor()
             self.cursor.execute('CREATE TABLE IF NOT EXISTS xkcds(id INTEGER PRIMARY KEY, name TEXT, uri TEXT, alt TEXT);')
+            self.cursor.execute('CREATE TABLE IF NOT EXISTS reminders(time INTEGER, channel TEXT, mention TEXT, content TEXT);')
         except Error as e:
             log_message('Database error: '+str(e))
             self.connection=None
@@ -59,6 +60,9 @@ class Database:
             return interpret_xkcd(data)
         else: # Otherwise, show 404 image
             return self.get_xkcd('not available')
+        
+    def insert_reminder(self,time,channel,mention,content):
+        pass
 
 
 def interpret_xkcd(data): # Clean up the data for sending in discord
