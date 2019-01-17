@@ -113,6 +113,6 @@ async def on_ready():
     print(client.user.id)
     print('---LOG---')
     if config['xkcd']:
-        Thread(target=update_xkcds_schedule,args=config['xkcd_interval']).start() # Regular event to update xkcd database
+        Thread(target=update_xkcds_schedule,args=[config['xkcd_interval']]).start() # Regular event to update xkcd database
 
 client.run(config['token']) #Connect
