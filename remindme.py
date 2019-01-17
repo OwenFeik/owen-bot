@@ -1,12 +1,12 @@
 import re
 import time
 from database import Database
-from datetime import datetime
+import datetime
 
 def handle_message(message):
     msg=clean_msg(message.content)
     if msg=='':
-        return 'Usage: --remindme in 1 day to do a thing or --remindme on 12/12/12 to do a different thing.'
+        return 'Usage: --remindme in 1 day to do a thing or --remindme on DD/MM/YY to do a different thing.'
     elif msg[0:2]=='in':
         msg=msg[3:] # Remove 'in '
         try:
@@ -32,9 +32,15 @@ def handle_message(message):
         db=Database('bot.db')
         db.insert_reminder(tme,message.channel.id,message.author.mention,msg)
         
-        dtm=datetime.fromtimestamp(tme)
+        dtm=datetime.datetime.fromtimestamp(tme)
         return f"I will remind you on {dtm.strftime('%b %d %Y')} at {dtm.strftime('%H:%M')} to {msg}"
     elif msg[0:2]=='on':
+        msg=msg[3:]
+        try:
+            date_string=re.search('[0-9/]+',msg).group(0)
+            date=datetime.datetime.strptime(date_string,'%-d/%-m/%y')
+        except ValueError:
+            return 'Usage: --remindme on DD/MM/YY to do something.'
         
 
         
