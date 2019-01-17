@@ -6,9 +6,10 @@ from time import sleep #Play sound for an appropriate length of time
 import xkcd # Get xkcd comics, update database
 from threading import Timer,Thread # Update xkcds every 24 hours
 import asyncio # Used to run database updates
-from utilities import log_message # Send formatted log messages
+from utilities import log_message,load_config # Send formatted log messages
 
-client = discord.Client() #Create the client.
+client=discord.Client() # Create the client.
+config=load_config()
 
 @client.event
 async def on_message(message):
@@ -22,7 +23,7 @@ async def on_message(message):
         return
 
     #Handles card tags
-    if '[' in message.content and ']' in message.content:
+    if config['scryfall'] and '[' in message.content and ']' in message.content:
         queries=get_queries(message.content) # A list of query objects
         for query in queries:
             found=query.found # Grab whatever we found, resolving the query in the process
@@ -33,7 +34,7 @@ async def on_message(message):
                 for face in found:
                     await client.send_message(message.channel,embed=face[0],content=face[1])
 
-    if message.content.startswith('--xkcd'): # If the user wants an xkcd comic
+    if config['xkcd'] and message.content.startswith('--xkcd'): # If the user wants an xkcd comic
         query=message.content[6:] # Everything except --xkcd
         if query:
             if query[0]==' ': # They may have put a space before their query
@@ -80,40 +81,38 @@ async def on_voice_state_update(old,new): #When a user joins a voice channel
                 print(new.name+' muted themself')
         else:
             print(new.name+' joined '+str(chnl)) #Print the channel and user
-            vc=await client.join_voice_channel(new.voice.voice_channel) #Join the voice channel they joined
-            player=vc.create_ffmpeg_player('user_joined.mp3') #Create player
-            log_message('Played user_joined.mp3 in '+str(new.voice.voice_channel))
-            player.start() #Play sound
-            sleep(2) #Wait for sound to finish
-            await vc.disconnect() #Leave
+            if config['announcer']:    
+                vc=await client.join_voice_channel(new.voice.voice_channel) #Join the voice channel they joined
+                player=vc.create_ffmpeg_player('resources/user_joined.mp3') #Create player
+                log_message('Played user_joined.mp3 in '+str(new.voice.voice_channel))
+                player.start() #Play sound
+                sleep(2) #Wait for sound to finish
+                await vc.disconnect() #Leave
     else:
         if old.voice.voice_channel.voice_members: # Only play sound if the channel still has people in it
             print(old.name+' left '+str(old.voice.voice_channel)) #Announce that someone left
-            vc=await client.join_voice_channel(old.voice.voice_channel)
-            player=vc.create_ffmpeg_player('user_left.mp3')
-            log_message('Played user_left.mp3 in '+str(old.voice.voice_channel))
-            player.start()
-            sleep(2)
-            await vc.disconnect()
+            if config['announcer']:
+                vc=await client.join_voice_channel(old.voice.voice_channel)
+                player=vc.create_ffmpeg_player('resources/user_left.mp3')
+                log_message('Played user_left.mp3 in '+str(old.voice.voice_channel))
+                player.start()
+                sleep(2)
+                await vc.disconnect()
 
 
-def update_xkcds_schedule(): # This will update the xkcd database regularly.
+def update_xkcds_schedule(period): # This will update the xkcd database regularly.
     asyncio.new_event_loop().run_until_complete(xkcd.update_db())
-    next_day_event=Timer(3600,update_xkcds_schedule)
+    next_day_event=Timer(period,update_xkcds_schedule,period)
     next_day_event.start()
 
 #Startup notification
 @client.event
 async def on_ready():
-    Thread(target=update_xkcds_schedule).start() # Daily event to update xkcd database
     print('Logged in as')
     print(client.user.name)
     print(client.user.id)
     print('---LOG---')
+    if config['xkcd']:
+        Thread(target=update_xkcds_schedule,args=config['xkcd_interval']).start() # Regular event to update xkcd database
 
-try:
-    with open('token.txt', 'r') as f: #Get the client token
-        token = f.read().replace('\n','') # Remove newlines if there are any
-    client.run(token) #Connect
-except FileNotFoundError:
-    print('Create a token.txt file with your bots authtoken!')
+client.run(config['token']) #Connect

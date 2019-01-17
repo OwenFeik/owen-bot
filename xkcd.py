@@ -45,7 +45,7 @@ class xkcd():
         return self
 
 def get_xkcd(query):
-    db=Database('xkcd.db')
+    db=Database('resources/bot.db')
     query=query.lower()
     if query=='random':
         return db.get_random_xkcd()
@@ -59,7 +59,7 @@ def get_xkcd(query):
 
 async def update_db():
     current=get_list() # list of comics currently in the database
-    db=Database('bot.db')
+    db=Database('resources/bot.db')
     r=requests.get('https://xkcd.com/archive/') # Grab the archive page, a list of all xkcd comics
     raw_names=re.findall('[0-9]{0,4}/" title="[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}">[^<>]+<',r.content.decode()) # Grab sections of html containing names
     xkcds=[]
@@ -79,7 +79,7 @@ async def update_db():
     log_message('xkcd database up to date!')
 
 def get_list(): # Grab the list of names of xkcds
-    db=Database('bot.db')
+    db=Database('resources/bot.db')
     return db.get_xkcd_list()
 
 def list_check(query): # Ensure we have the xkcd of name 'query'

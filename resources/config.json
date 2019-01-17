@@ -1,0 +1,7 @@
+{
+    "xkcd": true,
+    "xkcd_interval": 3600,
+    "scryfall": true,
+    "announcer": true,
+    "token": ""
+}
