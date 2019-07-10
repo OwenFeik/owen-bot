@@ -28,12 +28,12 @@ async def on_message(message):
         for query in queries:
             found=query.found # Grab whatever we found, resolving the query in the process
             if type(found)==str: # If it's just a string message, send it
-                await client.send_message(message.channel,content=found)
+                await message.channel.send(content=found)
             else: # If it's a card object, grab the message and send it
                 found=found.embed
                 for face in found:
-                    # await client.send_message(message.channel,embed=face[0],content=face[1])
-                    await client.send_message(message.channel, embed = face)
+                    # await message.channel.send(embed=face[0],content=face[1])
+                    await message.channel.send( embed = face)
 
     if config['xkcd'] and message.content.startswith('--xkcd'): # If the user wants an xkcd comic
         query=message.content[6:] # Everything except --xkcd
@@ -43,15 +43,15 @@ async def on_message(message):
             data=xkcd.get_xkcd(query) # Returns name,uri,alttext
             msg=data[0]
             img=discord.Embed().set_image(url=data[1])
-            await client.send_message(message.channel,embed=img,content=msg)
+            await message.channel.send(embed=img,content=msg)
             msg=data[2]
-            await client.send_message(message.channel,content=msg)
+            await message.channel.send(content=msg)
         else:
             msg='Use "--xkcd comic name" to find an xkcd comic. Approximate names should be good enough.'
-            await client.send_message(message.channel,msg)
+            await message.channel.send(msg)
     elif message.content.startswith('--'): # Handles commands (--)
         if message.content.startswith('--about'): #Info
-            msg="Hi, I'm Owen's bot! I help by finding magic cards for you and playing noises! Message Owen if anything is acting up."
+            msg="Hi, I'm Owen's bot! I help by finding magic cards for you! Message Owen if anything is acting up."
         elif message.content.startswith('--all'): #List all commands
             msg='All commands:\n\n\t--about\n\t--all\n\t--hello\n\t--help\n\t--syntax\n\t--xkcd'
         elif message.content.startswith('--easteregg'): #Easter egg
@@ -64,7 +64,7 @@ async def on_message(message):
             msg='Syntax overview:\n\n\tCall a --command.\n\tFind a [card] like this.\n\tFind a specific [printing|like this]\n\tGet a [random] card.'
         else: #Otherwise, their command is invalid
             msg='OwO, what\'s this? I don\'t understand that! Maybe try --help'
-        await client.send_message(message.channel,msg)
+        await message.channel.send(msg)
 
 
 @client.event
