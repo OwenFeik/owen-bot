@@ -1,7 +1,7 @@
 import requests # Grab card data from scryfall
 import re # Find queries in a message
 from card import Card # Pass objects to the bot
-from random import randint,shuffle # used to return a random sample of suggestions
+from random import choice, shuffle # used to return a random sample of suggestions
 
 # A query object allows the bot to prearrange api calls and then execute them as necessary
 class Query():
@@ -22,10 +22,7 @@ class Query():
             else:
                 self.card=get_random_card()
         elif self.query=='best card' or self.query=='the best card':
-            if randint(0,1):
-                self.card=get_fuzzy('Kalonian Hydra')
-            else:
-                self.card=get_fuzzy('Mystic Remora')
+            self.card = get_fuzzy(choice(['Kalonian Hydra', 'Mystic Remora', 'Faithless Looting']))
         else:
             if self.ed: # If the query specified an edition
                 found=get_printing(self.query,self.ed)
@@ -97,13 +94,13 @@ def get_fuzzy(query):
     elif r['layout']=='transform' or r['layout']=='double_faced_token': #If DFC get both faces
         names=[r['card_faces'][i]['name'] for i in range(0,2)]
         uris=[r['card_faces'][i]['image_uris']['normal'] for i in range(0,2)]
-        price=r.get('usd')
+        price=r.get('prices').get('usd')
 
         return Card(names,uris,price)
     
     names=[r['name']]
     uris=[r["image_uris"]["normal"]]
-    price=r.get('usd')
+    price=r.get('prices').get('usd')
     
     return Card(names,uris,price) #If normal card, get image
 
@@ -129,13 +126,13 @@ def get_printing(query,ed):
         if card['layout']=='transform' or card['layout']=='double_faced_token': #If its a DFC get both sides
             names=[card['card_faces'][i]['name'] for i in range(0,2)]
             uris=[card['card_faces'][i]['image_uris']['normal'] for i in range(0,2)]
-            price=card['usd']
+            price=card.get('prices').get('usd')
 
             return Card(names,uris,price)
 
         names=[card['name']] #Normal card, give one sided card
         uris=[card['image_uris']['normal']]
-        price=card['usd']
+        price=card.get('prices').get('usd')
 
         return Card(names,uris,price) 
 
@@ -145,7 +142,7 @@ def get_random_card():
     r=requests.get(request).json() #Get data as json
     names=[r['name']]
     uris=[r['image_uris']['normal']]
-    price=r.get('usd')
+    price=r.get('prices').get('usd')
     return Card(names,uris,price) #Return the card information
 
 #Get a random card froma set
@@ -157,7 +154,7 @@ def get_random_from_set(ed):
     else: #We found a card
         names=[r['name']]
         uris=[r['image_uris']['normal']]
-        price=r.get('usd')
+        price=r.get('prices').get('usd')
         return Card(names,uris,price) #Card information
 
 #Get suggestions similar to a card name

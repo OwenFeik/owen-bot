@@ -30,9 +30,10 @@ async def on_message(message):
             if type(found)==str: # If it's just a string message, send it
                 await client.send_message(message.channel,content=found)
             else: # If it's a card object, grab the message and send it
-                found=found.message
+                found=found.embed
                 for face in found:
-                    await client.send_message(message.channel,embed=face[0],content=face[1])
+                    # await client.send_message(message.channel,embed=face[0],content=face[1])
+                    await client.send_message(message.channel, embed = face)
 
     if config['xkcd'] and message.content.startswith('--xkcd'): # If the user wants an xkcd comic
         query=message.content[6:] # Everything except --xkcd

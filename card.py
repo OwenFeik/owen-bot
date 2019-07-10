@@ -47,3 +47,16 @@ class Card:
             img=Embed().set_image(url=self.uri)
             msg=self.name+'\t'+self.price
             return [(img,msg)]
+
+    @property
+    def embed(self):
+        if self.dfc:
+            embed1 = Embed(title = self.name, description = self.price)
+            embed1.set_thumbnail(url = self.uri)
+            embed2 = Embed(title = self.back_name)
+            embed2.set_thumbnail(url = self.back_uri)
+            return [embed1, embed2]
+        else:
+            embed = Embed(title = self.name, description = self.price)
+            embed.set_thumbnail(url = self.uri)
+            return [embed]
