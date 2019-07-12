@@ -11,3 +11,8 @@ def load_config(): # Load the config file
     except FileNotFoundError:
         print('No config file found.')
         exit()
+
+def extend_string(string, target_length):
+    while len(string) < target_length:
+        string += ' '
+    return string

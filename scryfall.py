@@ -91,19 +91,8 @@ def get_fuzzy(query):
     r=requests.get(request).json() #Get the response as a dictionary
     if 'status' in r and r['status']==404: #If no card found, return false
         return False
-    elif r['layout']=='transform' or r['layout']=='double_faced_token': #If DFC get both faces
-        names=[r['card_faces'][i]['name'] for i in range(0,2)]
-        uris=[r['card_faces'][i]['image_uris']['normal'] for i in range(0,2)]
-        price=r.get('prices').get('usd')
-
-        return Card(names,uris,price)
     
-    names=[r['name']]
-    uris=[r["image_uris"]["normal"]]
-    price=r.get('prices').get('usd')
-    
-    return Card(names,uris,price) #If normal card, get image
-
+    return Card.from_scryfall_response(r)
 
 #Get uri of a specific printing of card
 def get_printing(query,ed):
@@ -122,28 +111,13 @@ def get_printing(query,ed):
             msg+='\t'+sugg+'\n'
         return msg
     else:
-        card=r['data'][0]
-        if card['layout']=='transform' or card['layout']=='double_faced_token': #If its a DFC get both sides
-            names=[card['card_faces'][i]['name'] for i in range(0,2)]
-            uris=[card['card_faces'][i]['image_uris']['normal'] for i in range(0,2)]
-            price=card.get('prices').get('usd')
-
-            return Card(names,uris,price)
-
-        names=[card['name']] #Normal card, give one sided card
-        uris=[card['image_uris']['normal']]
-        price=card.get('prices').get('usd')
-
-        return Card(names,uris,price) 
+        return Card.from_scryfall_response(r['data'][0])
 
 #Get a random card uri
 def get_random_card():
     request='https://api.scryfall.com/cards/random' #Information of a random card
     r=requests.get(request).json() #Get data as json
-    names=[r['name']]
-    uris=[r['image_uris']['normal']]
-    price=r.get('prices').get('usd')
-    return Card(names,uris,price) #Return the card information
+    return Card.from_scryfall_response(r)
 
 #Get a random card froma set
 def get_random_from_set(ed):
@@ -152,10 +126,7 @@ def get_random_from_set(ed):
     if 'status' in r and r['status']==404: #This means the set wasn't found
         return False
     else: #We found a card
-        names=[r['name']]
-        uris=[r['image_uris']['normal']]
-        price=r.get('prices').get('usd')
-        return Card(names,uris,price) #Card information
+        return Card.from_scryfall_response(r)
 
 #Get suggestions similar to a card name
 def get_suggs(query):

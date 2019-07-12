@@ -1,17 +1,18 @@
-from discord import Embed #Used to make messages to send
+from discord import Embed # Used to make messages to send
+from utilities import extend_string # Ensure multiple embeds look nice
 
 class Card:
-    def __init__(self,names,uris,price):
-        self.names=names
-        self.uris=uris
-        if len(self.uris)>1:
-            self.dfc=True
+    def __init__(self, names, uris, price):
+        self.names = names
+        self.uris = uris
+        if len(self.uris) > 1:
+            self.dfc = True
         else:
-            self.dfc=False
+            self.dfc = False
         if price:
-            self.price='$'+price
+            self.price = '$' + price
         else:
-            self.price='Price N/A'
+            self.price = 'Price N/A'
 
     @property
     def name(self):
@@ -36,27 +37,21 @@ class Card:
             return False
 
     @property
-    def message(self):
-        if self.dfc:
-            img1=Embed().set_image(url=self.uri)
-            msg1=self.name+'\t'+self.price
-            img2=Embed().set_image(url=self.back_uri)
-            msg2=self.back_name
-            return [(img1,msg1),(img2,msg2)]
-        else:
-            img=Embed().set_image(url=self.uri)
-            msg=self.name+'\t'+self.price
-            return [(img,msg)]
-
-    @property
     def embed(self):
+        embeds = [Embed(title = self.name, description = self.price).set_thumbnail(url = self.uri)]
         if self.dfc:
-            embed1 = Embed(title = self.name, description = self.price)
-            embed1.set_thumbnail(url = self.uri)
-            embed2 = Embed(title = self.back_name)
-            embed2.set_thumbnail(url = self.back_uri)
-            return [embed1, embed2]
+            embeds.append(Embed(title = self.back_name).set_thumbnail(url = self.back_uri))
+        return embeds
+
+    @staticmethod
+    def from_scryfall_response(card):
+        if card['layout'] in ['transform', 'double_faced_token']:
+            names = [card['card_faces'][i]['name'] for i in range(0,2)]
+            uris = [card['card_faces'][i]['image_uris']['normal'] for i in range(0,2)]
         else:
-            embed = Embed(title = self.name, description = self.price)
-            embed.set_thumbnail(url = self.uri)
-            return [embed]
+            names = [card['name']]
+            uris = [card['image_uris']['normal']]
+
+        price = card.get('prices').get('usd')
+
+        return Card(names, uris, price)
