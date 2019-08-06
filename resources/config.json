@@ -3,5 +3,6 @@
     "xkcd_interval": 3600,
     "scryfall": true,
     "announcer": true,
+    "creeper": true,
     "token": "Your discord authtoken here."
 }

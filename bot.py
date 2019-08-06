@@ -67,7 +67,10 @@ async def on_message(message):
         else: #Otherwise, their command is invalid
             msg = 'What\'s this? I don\'t understand that! Maybe try --help'
         await message.channel.send(msg)
-
+    elif config['creeper'] and 'creeper' in message.content.lower():
+        colour = discord.Colour.from_rgb(13, 181, 13)
+        embed = discord.Embed(title = 'Awww mannn', url = 'https://www.youtube.com/watch?v=cPJUBQd-PNM', colour = colour)
+        await message.channel.send(embed = embed)
 
 @client.event
 async def on_voice_state_update(old,new): #When a user joins a voice channel
