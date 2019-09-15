@@ -7,9 +7,12 @@ import xkcd # Get xkcd comics, update database
 from threading import Timer,Thread # Update xkcds every 24 hours
 import asyncio # Used to run database updates
 from utilities import log_message,load_config # Send formatted log messages
+import mcserv
 
-client=discord.Client() # Create the client.
-config=load_config()
+client = discord.Client() # Create the client.
+config = load_config()
+if config['mcserv']:
+    mcserv_handler = mcserv.CommandHandler(config['mcserv_config'])
 
 @client.event
 async def on_message(message):
@@ -51,6 +54,12 @@ async def on_message(message):
         img = discord.Embed()
         img.set_image(url = 'https://i.imgur.com/mzbvy4b.png')
         await message.channel.send(embed = img)
+    elif config['mcserv'] and message.content.startswith('--minecraft'):
+        command = message.content[11:].strip()
+        sender = str(message.author)
+
+        response = mcserv_handler.handle_command(command, sender)
+        await message.channel.send(content = response)
     elif message.content.startswith('--'): # Handles commands (--)
         if message.content.startswith('--about'): #Info
             msg = "Hi, I'm Owen's bot! I help by finding magic cards for you! Message Owen if anything is acting up."
@@ -69,7 +78,7 @@ async def on_message(message):
         await message.channel.send(msg)
     elif config['creeper'] and 'creeper' in message.content.lower():
         colour = discord.Colour.from_rgb(13, 181, 13)
-        embed = discord.Embed(title = 'Awww mannn', url = 'https://www.youtube.com/watch?v=cPJUBQd-PNM', colour = colour)
+        embed = discord.Embed(title = 'Awww mannn', url = 'https://www.youtube.com/watch?v=cPJUBQd-PNM', colour = colour) # link to "revenge" Minecraft parody
         await message.channel.send(embed = embed)
 
 @client.event

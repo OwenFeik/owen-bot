@@ -4,5 +4,14 @@
     "scryfall": true,
     "announcer": true,
     "creeper": true,
-    "token": "Your discord authtoken here."
+    "token": "Your discord authtoken here.",
+    "mcserv": true,
+    "mcserv_config": {
+        "address": "Address of your minecraft server.",
+        "port": 22,
+        "username": "SSH username.",
+        "password": "SSH password.",
+        "reboot_interval": 3600,
+        "reboot_votes": 2
+    }
 }
