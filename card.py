@@ -1,8 +1,17 @@
-from discord import Embed # Used to make messages to send
-from utilities import extend_string # Ensure multiple embeds look nice
+import discord
 
 class Card:
-    def __init__(self, names, uris, price):
+    colours = {
+        'W': (248, 231, 185),
+        'U': (179, 206, 234),
+        'B': (166, 159, 157),
+        'R': (235, 159, 130),
+        'G': (196, 211, 202),
+        'M': (199, 161, 100),
+        'C': (209, 213, 214)
+    }
+
+    def __init__(self, names, uris, price, colour_id = None):
         self.names = names
         self.uris = uris
         if len(self.uris) > 1:
@@ -13,6 +22,8 @@ class Card:
             self.price = '$' + price
         else:
             self.price = 'Price N/A'
+
+        self.colour_id = colour_id
 
     @property
     def name(self):
@@ -38,10 +49,23 @@ class Card:
 
     @property
     def embed(self):
-        embeds = [Embed(title = self.name, description = self.price).set_thumbnail(url = self.uri)]
-        if self.dfc:
-            embeds.append(Embed(title = self.back_name).set_thumbnail(url = self.back_uri))
-        return embeds
+        if self.colour_id:
+            if len(self.colour_id) > 1:
+                colour = discord.Colour.from_rgb(*self.colours['M'])
+            elif len(self.colour_id) < 1:
+                colour = discord.Colour.from_rgb(*self.colours['C'])
+            else:
+                colour = discord.Colour.from_rgb(*self.colours[self.colour_id[0]])
+
+            embeds = [discord.Embed(title = self.name, description = self.price, colour = colour).set_thumbnail(url = self.uri)]
+            if self.dfc:
+                embeds.append(discord.Embed(title = self.back_name, colour = colour).set_thumbnail(url = self.back_uri))
+            return embeds
+        else:
+            embeds = [discord.Embed(title = self.name, description = self.price).set_thumbnail(url = self.uri)]
+            if self.dfc:
+                embeds.append(discord.Embed(title = self.back_name).set_thumbnail(url = self.back_uri))
+            return embeds
 
     @staticmethod
     def from_scryfall_response(card):
@@ -53,5 +77,6 @@ class Card:
             uris = [card['image_uris']['normal']]
 
         price = card.get('prices').get('usd')
+        colour_id = card['color_identity']
 
-        return Card(names, uris, price)
+        return Card(names, uris, price, colour_id)
