@@ -23,7 +23,7 @@ class SSH():
 
         self.read()
 
-        return self
+        return self # Allow for code like SSH().connect()
     
     def close(self):
         self.channel.close()
@@ -42,10 +42,13 @@ class SSH():
                 break
 
 def reboot(config):
-
     ssh = SSH(**config).connect() # Connect to the server
 
     ssh.exec_command('screen -r minecraft') # Navigate to the apropriate screen
+
+    if 'There is no screen to be resumed matching minecraft.' in ssh.out: # Screen failed, create a new one
+        ssh.exec_command('screen -S minecraft')
+
     ssh.exec_command('stop') # Stop the server (in the case it isn't running this will just write to stderr: no problem)
     ssh.exec_command('./start.sh') # (re)start the server
 
