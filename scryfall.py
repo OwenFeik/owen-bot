@@ -60,7 +60,7 @@ class Query():
 # Return query objects for each card found in the message
 def get_queries(message):
     queries=[]
-    for q in re.findall('\[[^\[\]]+\]',message): # Grab all [card tags]
+    for q in re.findall(r'\[[^\[\]]+\]',message): # Grab all [card tags]
         q=q.replace('[','').replace(']','') # Remove the [] so we can work with the name and set 
         if q=='': # If this search is blank, just ignore it
             continue

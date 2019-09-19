@@ -35,7 +35,6 @@ async def on_message(message):
             else: # If it's a card object, grab the message and send it
                 for face in found.embed:
                     await message.channel.send(embed = face)
-
     if config['xkcd'] and message.content.startswith('--xkcd'): # If the user wants an xkcd comic
         query=message.content[6:] # Everything except --xkcd
         if query:
@@ -54,17 +53,21 @@ async def on_message(message):
         img = discord.Embed()
         img.set_image(url = 'https://i.imgur.com/mzbvy4b.png')
         await message.channel.send(embed = img)
+    elif message.content.startswith('--vw'):
+        normal = u' 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~'
+        wide = u'　０１２３４５６７８９ａｂｃｄｅｆｇｈｉｊｋｌｍｎｏｐｑｒｓｔｕｖｗｘｙｚＡＢＣＤＥＦＧＨＩＪＫＬＭＮＯＰＱＲＳＴＵＶＷＸＹＺ！゛＃＄％＆（）＊＋、ー。／：；〈＝〉？＠［\\］＾＿‘｛｜｝～'
+        widemap = dict((ord(x[0]), x[1]) for x in zip(normal, wide))
+        await message.channel.send(content = message.content[4:].strip().translate(widemap))
     elif config['mcserv'] and message.content.startswith('--minecraft'):
         command = message.content[11:].strip()
         sender = str(message.author)
-
         response = mcserv_handler.handle_command(command, sender)
         await message.channel.send(content = response)
     elif message.content.startswith('--'): # Handles commands (--)
         if message.content.startswith('--about'): #Info
             msg = "Hi, I'm Owen's bot! I help by finding magic cards for you! Message Owen if anything is acting up."
         elif message.content.startswith('--all'): #List all commands
-            msg = 'All commands:\n\n\t--about\n\t--all\n\t--hello\n\t--help\n\t--syntax\n\t--xkcd'
+            msg = 'All commands:\n\n\t--about\n\t--all\n\t--hello\n\t--help\n\t--minecraft\n\t--syntax\n\t--vw\n\t--weeb\n\t--xkcd'
         elif message.content.startswith('--easteregg'): #Easter egg
             msg = 'Smartarse'
         elif message.content.startswith('--hello'): #Hello World
