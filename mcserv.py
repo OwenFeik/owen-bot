@@ -48,6 +48,7 @@ def reboot(config):
 
     if 'There is no screen to be resumed matching minecraft.' in ssh.out: # Screen failed, create a new one
         ssh.exec_command('screen -S minecraft')
+        ssh.exec_command('cd mc-serv')
 
     ssh.exec_command('stop') # Stop the server (in the case it isn't running this will just write to stderr: no problem)
     ssh.exec_command('./start.sh') # (re)start the server
