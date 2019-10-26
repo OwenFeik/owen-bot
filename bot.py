@@ -67,7 +67,7 @@ async def on_message(message):
         if message.content.startswith('--about'): #Info
             msg = "Hi, I'm Owen's bot! I help by finding magic cards for you! Message Owen if anything is acting up."
         elif message.content.startswith('--all'): #List all commands
-            msg = 'All commands:\n\n\t--about\n\t--all\n\t--hello\n\t--help\n\t--minecraft\n\t--syntax\n\t--vw\n\t--weeb\n\t--xkcd'
+            msg = 'All commands:\n\n\t--about\n\t--all\n\t--hello\n\t--help\n\t--minecraft\n\t--no\n\t--syntax\n\t--vw\n\t--weeb\n\t--xkcd'
         elif message.content.startswith('--easteregg'): #Easter egg
             msg = 'Smartarse'
         elif message.content.startswith('--hello'): #Hello World
@@ -77,7 +77,7 @@ async def on_message(message):
         elif message.content.startswith('--syntax'): #Breakdown of bot syntax
             msg = 'Syntax overview:\n\n\tCall a --command.\n\tFind a [card] like this.\n\tFind a specific [printing|like this]\n\tGet a [random] card.'
         elif message.content.startswith('--no'):
-            msg = ':urarakagun:               :urarakagun:    :urarakagun::urarakagun::urarakagun:\n:urarakagun::urarakagun:      :urarakagun:    :urarakagun:         :urarakagun:\n:urarakagun:      :urarakagun::urarakagun:    :urarakagun:         :urarakagun:\n:urarakagun:               :urarakagun:    :urarakagun:         :urarakagun:\n:urarakagun:               :urarakagun:    :urarakagun::urarakagun::urarakagun:'
+            msg = '<:urarakagun:637516402885918735>               <:urarakagun:637516402885918735>    <:urarakagun:637516402885918735><:urarakagun:637516402885918735><:urarakagun:637516402885918735>\n<:urarakagun:637516402885918735><:urarakagun:637516402885918735>      <:urarakagun:637516402885918735>    <:urarakagun:637516402885918735>         <:urarakagun:637516402885918735>\n<:urarakagun:637516402885918735>      <:urarakagun:637516402885918735><:urarakagun:637516402885918735>    <:urarakagun:637516402885918735>         <:urarakagun:637516402885918735>\n<:urarakagun:637516402885918735>               <:urarakagun:637516402885918735>    <:urarakagun:637516402885918735>         <:urarakagun:637516402885918735>\n<:urarakagun:637516402885918735>               <:urarakagun:637516402885918735>    <:urarakagun:637516402885918735><:urarakagun:637516402885918735><:urarakagun:637516402885918735>'
         else: #Otherwise, their command is invalid
             msg = 'What\'s this? I don\'t understand that! Maybe try --help'
         await message.channel.send(msg)
