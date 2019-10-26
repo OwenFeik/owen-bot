@@ -76,6 +76,8 @@ async def on_message(message):
             msg = 'Use [Card Name] to call me! Try --all or --syntax for more info.'
         elif message.content.startswith('--syntax'): #Breakdown of bot syntax
             msg = 'Syntax overview:\n\n\tCall a --command.\n\tFind a [card] like this.\n\tFind a specific [printing|like this]\n\tGet a [random] card.'
+        elif message.content.startswith('--no'):
+            msg = ':urarakagun:               :urarakagun:    :urarakagun::urarakagun::urarakagun:\n:urarakagun::urarakagun:      :urarakagun:    :urarakagun:         :urarakagun:\n:urarakagun:      :urarakagun::urarakagun:    :urarakagun:         :urarakagun:\n:urarakagun:               :urarakagun:    :urarakagun:         :urarakagun:\n:urarakagun:               :urarakagun:    :urarakagun::urarakagun::urarakagun:'
         else: #Otherwise, their command is invalid
             msg = 'What\'s this? I don\'t understand that! Maybe try --help'
         await message.channel.send(msg)
