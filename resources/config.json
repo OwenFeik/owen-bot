@@ -6,6 +6,7 @@
     "creeper": true,
     "token": "Your discord authtoken here.",
     "mcserv": true,
+    "wordart_emoji": "<:ugun:637516402885918735>",
     "mcserv_config": {
         "address": "Address of your minecraft server.",
         "port": 22,

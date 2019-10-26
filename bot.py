@@ -8,6 +8,8 @@ from threading import Timer,Thread # Update xkcds every 24 hours
 import asyncio # Used to run database updates
 from utilities import log_message,load_config # Send formatted log messages
 import mcserv
+import wordart # Create word out of emojis
+import random
 
 client = discord.Client() # Create the client.
 config = load_config()
@@ -53,11 +55,28 @@ async def on_message(message):
         img = discord.Embed()
         img.set_image(url = 'https://i.imgur.com/mzbvy4b.png')
         await message.channel.send(embed = img)
+    elif message.content.startswith('--reverse'):
+        img = discord.Embed() 
+        img.set_image(url = random.choice(['https://i.imgur.com/yXEiYQ4.png', 'https://i.imgur.com/CSuB3ZW.png', 'https://i.imgur.com/3WDcYbV.png', 'https://i.imgur.com/IxDEdxW.png']))
+        await message.channel.send(embed = img)
     elif message.content.startswith('--vw'):
-        normal = u' 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~'
-        wide = u'　０１２３４５６７８９ａｂｃｄｅｆｇｈｉｊｋｌｍｎｏｐｑｒｓｔｕｖｗｘｙｚＡＢＣＤＥＦＧＨＩＪＫＬＭＮＯＰＱＲＳＴＵＶＷＸＹＺ！゛＃＄％＆（）＊＋、ー。／：；〈＝〉？＠［\\］＾＿‘｛｜｝～'
-        widemap = dict((ord(x[0]), x[1]) for x in zip(normal, wide))
-        await message.channel.send(content = message.content[4:].strip().translate(widemap))
+        string = message.content[4:].strip()
+        if string == '':
+            await message.channel.send('Usage: --vw message to vaporwave')
+        else:
+            normal = u' 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~'
+            wide = u'　０１２３４５６７８９ａｂｃｄｅｆｇｈｉｊｋｌｍｎｏｐｑｒｓｔｕｖｗｘｙｚＡＢＣＤＥＦＧＨＩＪＫＬＭＮＯＰＱＲＳＴＵＶＷＸＹＺ！゛＃＄％＆（）＊＋、ー。／：；〈＝〉？＠［\\］＾＿‘｛｜｝～'
+            widemap = dict((ord(x[0]), x[1]) for x in zip(normal, wide))
+            await message.channel.send(content = message.content[4:].strip().translate(widemap))
+    elif message.content.startswith('--wa'):
+        string = message.content[4:].strip().lower()
+        if string == '':
+            await message.channel.send('Usage: --wa message to create word art.\nMessages must be very short: around 6 characters.')
+        else:
+            try:
+                await message.channel.send(content = wordart.translate(string, config['wordart_emoji']))
+            except discord.errors.HTTPException: # Message was too long for HTTP request
+                await message.channel.send(content = 'Sorry, message too long.')
     elif config['mcserv'] and message.content.startswith('--minecraft'):
         command = message.content[11:].strip()
         sender = str(message.author)
@@ -65,9 +84,9 @@ async def on_message(message):
         await message.channel.send(content = response)
     elif message.content.startswith('--'): # Handles commands (--)
         if message.content.startswith('--about'): #Info
-            msg = "Hi, I'm Owen's bot! I help by finding magic cards for you! Message Owen if anything is acting up."
+            msg = "Hi, I'm Owen's bot! I help by finding magic cards for you, among other things! Try --all, and message Owen if anything is acting up."
         elif message.content.startswith('--all'): #List all commands
-            msg = 'All commands:\n\n\t--about\n\t--all\n\t--hello\n\t--help\n\t--minecraft\n\t--no\n\t--syntax\n\t--vw\n\t--weeb\n\t--xkcd'
+            msg = 'All commands:\n\n\t--about\n\t--all\n\t--hello\n\t--help\n\t--minecraft\n\t--no\n\t--reverse\n\t--syntax\n\t--vw\n\t--wa\n\t--weeb\n\t--xkcd'
         elif message.content.startswith('--easteregg'): #Easter egg
             msg = 'Smartarse'
         elif message.content.startswith('--hello'): #Hello World
