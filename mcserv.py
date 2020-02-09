@@ -5,10 +5,10 @@ import time # limit how often server is rebooted
 class SSH():
     def __init__(self, **kwargs):
         self.ip = kwargs.get('address')
-        self.port = kwargs.get('port') if kwargs.get('port') is not None else 22
+        self.port = kwargs.get('port', 22)
         self.username = kwargs.get('username')
         self.password = kwargs.get('password')
-        self.timeout = kwargs.get('timeout') if kwargs.get('timeout') is not None else 3
+        self.timeout = kwargs.get('timeout', 3)
 
         self.client = paramiko.SSHClient()
         self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())

@@ -1,11 +1,11 @@
 {
     "xkcd": true,
-    "xkcd_interval": 3600,
+    "xkcd_interval": 1800,
     "scryfall": true,
-    "announcer": true,
+    "announcer": false,
     "creeper": true,
-    "token": "Your discord authtoken here.",
-    "mcserv": true,
+    "token": "Your authtoken here.",
+    "mcserv": false,
     "wordart_emoji": "<:ugun:637516402885918735>",
     "mcserv_config": {
         "address": "Address of your minecraft server.",

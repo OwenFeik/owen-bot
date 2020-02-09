@@ -9,5 +9,5 @@ def load_config(): # Load the config file
         with open('resources/config.json','r') as f:
             return json.load(f) # And return a dictionary with the relevant points
     except FileNotFoundError:
-        print('No config file found.')
+        log_message('No config file found.')
         exit()

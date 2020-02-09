@@ -89,10 +89,14 @@ def list_check(query): # Ensure we have the xkcd of name 'query'
 
 def sugg(query):
     best=0.5 # Suggestions must be at least 50% similar
-    best_name='not available' # the comic not available is our 404 message
+    best_name='not available' # the comic "not available" is our 404 message
     for name in get_list():
         r=SequenceMatcher(a=name,b=query).ratio()
         if r>best:
             best=r
             best_name=name
     return best_name
+
+# Allow this file to be run with a cron job or similar
+if __name__ == "__main__":
+    asyncio.get_event_loop().run_until_complete(update_db())

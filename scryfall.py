@@ -70,7 +70,7 @@ def get_queries(message):
             else:
                 q=q.split('|') # Divide into name (q[0]) and set (q[1])
                 if not '' in q: # If we have both a name and a set
-                    queries.append(Query(q[0],q[1]))
+                    queries.append(Query(q[0].strip(),q[1].strip()))
                 else:
                     if q[0]=='': # If we only have a set grab a random card from that set
                         queries.append(Query('random',q[1]))

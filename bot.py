@@ -1,18 +1,18 @@
 #Requires Python 3.6
 
 import discord #Run bot
-from scryfall import get_queries #API call functions
-from time import sleep #Play sound for an appropriate length of time
+import scryfall #API call functions
+import time # Use sleep to time some things
 import xkcd # Get xkcd comics, update database
-from threading import Timer,Thread # Update xkcds every 24 hours
+import threading # Update xkcds regularly on seperate thread
 import asyncio # Used to run database updates
-from utilities import log_message,load_config # Send formatted log messages
+import utilities # Send formatted log messages, load configuration file
 import mcserv
 import wordart # Create word out of emojis
 import random
 
 client = discord.Client() # Create the client.
-config = load_config()
+config = utilities.load_config()
 if config['mcserv']:
     mcserv_handler = mcserv.CommandHandler(config['mcserv_config'])
 
@@ -29,27 +29,28 @@ async def on_message(message):
 
     #Handles card tags
     if config['scryfall'] and '[' in message.content and ']' in message.content:
-        queries=get_queries(message.content) # A list of query objects
+        queries = scryfall.get_queries(message.content) # A list of query objects
         for query in queries:
-            found=query.found # Grab whatever we found, resolving the query in the process
-            if type(found)==str: # If it's just a string message, send it
-                await message.channel.send(content=found)
+            found = query.found # Grab whatever we found, resolving the query in the process
+            if type(found) == str: # If it's just a string message, send it
+                await message.channel.send(content = found)
             else: # If it's a card object, grab the message and send it
                 for face in found.embed:
                     await message.channel.send(embed = face)
+
     if config['xkcd'] and message.content.startswith('--xkcd'): # If the user wants an xkcd comic
-        query=message.content[6:] # Everything except --xkcd
+        query = message.content[6:] # Everything except --xkcd
         if query:
-            if query[0]==' ': # They may have put a space before their query
-                query=query[1:]
-            data=xkcd.get_xkcd(query) # Returns name,uri,alttext
-            msg=data[0]
-            img=discord.Embed().set_image(url=data[1])
-            await message.channel.send(embed=img,content=msg)
-            msg=data[2]
-            await message.channel.send(content=msg)
+            if query[0] == ' ': # They may have put a space before their query
+                query = query[1:]
+            data = xkcd.get_xkcd(query) # Returns name,uri,alttext
+            msg = data[0]
+            img = discord.Embed().set_image(url = data[1])
+            await message.channel.send(embed = img, content = msg)
+            msg = data[2]
+            await message.channel.send(content = msg)
         else:
-            msg='Use "--xkcd comic name" to find an xkcd comic. Approximate names should be good enough.'
+            msg = 'Use "--xkcd comic name" to find an xkcd comic. Approximate names should be good enough.'
             await message.channel.send(msg)
     elif message.content.startswith('--weeb'):
         img = discord.Embed()
@@ -64,10 +65,7 @@ async def on_message(message):
         if string == '':
             await message.channel.send('Usage: --vw message to vaporwave')
         else:
-            normal = u' 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~'
-            wide = u'　０１２３４５６７８９ａｂｃｄｅｆｇｈｉｊｋｌｍｎｏｐｑｒｓｔｕｖｗｘｙｚＡＢＣＤＥＦＧＨＩＪＫＬＭＮＯＰＱＲＳＴＵＶＷＸＹＺ！゛＃＄％＆（）＊＋、ー。／：；〈＝〉？＠［\\］＾＿‘｛｜｝～'
-            widemap = dict((ord(x[0]), x[1]) for x in zip(normal, wide))
-            await message.channel.send(content = message.content[4:].strip().translate(widemap))
+            await message.channel.send(content = wordart.vaporwave(message.content[4:].strip()))
     elif message.content.startswith('--wa'):
         string = message.content[4:].strip().lower()
         if string == '':
@@ -96,7 +94,7 @@ async def on_message(message):
         elif message.content.startswith('--syntax'): #Breakdown of bot syntax
             msg = 'Syntax overview:\n\n\tCall a --command.\n\tFind a [card] like this.\n\tFind a specific [printing|like this]\n\tGet a [random] card.'
         elif message.content.startswith('--no'):
-            msg = '<:urarakagun:637516402885918735>                     <:urarakagun:637516402885918735>    <:urarakagun:637516402885918735><:urarakagun:637516402885918735><:urarakagun:637516402885918735>\n<:urarakagun:637516402885918735><:urarakagun:637516402885918735>        <:urarakagun:637516402885918735>    <:urarakagun:637516402885918735>             <:urarakagun:637516402885918735>\n<:urarakagun:637516402885918735>        <:urarakagun:637516402885918735><:urarakagun:637516402885918735>    <:urarakagun:637516402885918735>             <:urarakagun:637516402885918735>\n<:urarakagun:637516402885918735>                     <:urarakagun:637516402885918735>    <:urarakagun:637516402885918735>             <:urarakagun:637516402885918735>\n<:urarakagun:637516402885918735>                     <:urarakagun:637516402885918735>    <:urarakagun:637516402885918735><:urarakagun:637516402885918735><:urarakagun:637516402885918735>'
+            msg = wordart.no
         else: #Otherwise, their command is invalid
             msg = 'What\'s this? I don\'t understand that! Maybe try --help'
         await message.channel.send(msg)
@@ -123,9 +121,9 @@ async def on_voice_state_update(old,new): #When a user joins a voice channel
             if config['announcer']:    
                 vc = await client.join_voice_channel(new.voice.voice_channel) #Join the voice channel they joined
                 player = vc.create_ffmpeg_player('resources/user_joined.mp3') #Create player
-                log_message('Played user_joined.mp3 in ' + str(new.voice.voice_channel))
+                utilities.log_message('Played user_joined.mp3 in ' + str(new.voice.voice_channel))
                 player.start() #Play sound
-                sleep(2) #Wait for sound to finish
+                time.sleep(2) #Wait for sound to finish
                 await vc.disconnect() #Leave
     else:
         if old.voice.voice_channel.voice_members: # Only play sound if the channel still has people in it
@@ -133,16 +131,15 @@ async def on_voice_state_update(old,new): #When a user joins a voice channel
             if config['announcer']:
                 vc = await client.join_voice_channel(old.voice.voice_channel)
                 player = vc.create_ffmpeg_player('resources/user_left.mp3')
-                log_message('Played user_left.mp3 in ' + str(old.voice.voice_channel))
+                utilities.log_message('Played user_left.mp3 in ' + str(old.voice.voice_channel))
                 player.start()
-                sleep(2)
+                time.sleep(2)
                 await vc.disconnect()
 
-
 def update_xkcds_schedule(period): # This will update the xkcd database regularly.
-    asyncio.new_event_loop().run_until_complete(xkcd.update_db())
-    next_day_event = Timer(period, update_xkcds_schedule, period)
-    next_day_event.start()
+    while True:
+        asyncio.new_event_loop().run_until_complete(xkcd.update_db())
+        time.sleep(period)
 
 #Startup notification
 @client.event
@@ -152,6 +149,6 @@ async def on_ready():
     print(client.user.id)
     print('---LOG---')
     if config['xkcd']:
-        Thread(target = update_xkcds_schedule, args = [config['xkcd_interval']]).start() # Regular event to update xkcd database
+        threading.Thread(target = update_xkcds_schedule, args = [config['xkcd_interval']]).start() # Regular event to update xkcd database
 
 client.run(config['token']) #Connect

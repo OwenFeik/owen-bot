@@ -22,3 +22,13 @@ def translate(string, emoji):
         output += '\n'
 
     return output
+
+def vaporwave(string):
+    normal = u' 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~'
+    wide = u'　０１２３４５６７８９ａｂｃｄｅｆｇｈｉｊｋｌｍｎｏｐｑｒｓｔｕｖｗｘｙｚＡＢＣＤＥＦＧＨＩＪＫＬＭＮＯＰＱＲＳＴＵＶＷＸＹＺ！゛＃＄％＆（）＊＋、ー。／：；〈＝〉？＠［\\］＾＿‘｛｜｝～'
+    widemap = dict((ord(x[0]), x[1]) for x in zip(normal, wide))
+
+    return string.translate(widemap)
+
+# String sent as message.
+no = '<:urarakagun:637516402885918735>                     <:urarakagun:637516402885918735>    <:urarakagun:637516402885918735><:urarakagun:637516402885918735><:urarakagun:637516402885918735>\n<:urarakagun:637516402885918735><:urarakagun:637516402885918735>        <:urarakagun:637516402885918735>    <:urarakagun:637516402885918735>             <:urarakagun:637516402885918735>\n<:urarakagun:637516402885918735>        <:urarakagun:637516402885918735><:urarakagun:637516402885918735>    <:urarakagun:637516402885918735>             <:urarakagun:637516402885918735>\n<:urarakagun:637516402885918735>                     <:urarakagun:637516402885918735>    <:urarakagun:637516402885918735>             <:urarakagun:637516402885918735>\n<:urarakagun:637516402885918735>                     <:urarakagun:637516402885918735>    <:urarakagun:637516402885918735><:urarakagun:637516402885918735><:urarakagun:637516402885918735>'
