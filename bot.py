@@ -7,13 +7,13 @@ import xkcd # Get xkcd comics, update database
 import threading # Update xkcds regularly on seperate thread
 import asyncio # Used to run database updates
 import utilities # Send formatted log messages, load configuration file
-import mcserv
 import wordart # Create word out of emojis
 import random
 
 client = discord.Client() # Create the client.
 config = utilities.load_config()
 if config['mcserv']:
+    import mcserv # Optional Paramiko dependancy.
     mcserv_handler = mcserv.CommandHandler(config['mcserv_config'])
 
 @client.event
