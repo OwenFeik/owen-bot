@@ -1,3 +1,3 @@
 cd ~/owen-bot
-touch .log
-python3.6 bot.py > .log
+touch resources/.log
+python3.6 bot.py > resources/.log
