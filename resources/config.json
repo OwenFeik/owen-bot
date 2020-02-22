@@ -4,9 +4,9 @@
     "scryfall": true,
     "announcer": false,
     "creeper": true,
-    "token": "NTA2MzU4MTk1NDYwMjQzNDU3.Driaag.V3XONKLbDDwE5GOxELTP2j_KQqY",
+    "token": "Your discord client secret.",
     "mcserv": false,
-    "wordart_emoji": "<:ugun:637516402885918735>",
+    "wordart_emoji": "<:bean:678902934393585685>",
     "mcserv_config": {
         "address": "Address of your minecraft server.",
         "port": 22,

@@ -8,7 +8,8 @@ import threading # Update xkcds regularly on seperate thread
 import asyncio # Used to run database updates
 import utilities # Send formatted log messages, load configuration file
 import wordart # Create word out of emojis
-import random
+import random # Send one of four images at random
+import re # Find emojis in messages
 
 client = discord.Client() # Create the client.
 config = utilities.load_config()
@@ -67,12 +68,21 @@ async def on_message(message):
         else:
             await message.channel.send(content = wordart.vaporwave(message.content[4:].strip()))
     elif message.content.startswith('--wa'):
-        string = message.content[4:].strip().lower()
+        string = message.content[4:].lower()
+
+        emoji = re.search(r'<:[\w]+:[\d]{18}>', string) 
+        if emoji:
+            emoji = emoji.group(0)
+            string = string.replace(emoji, '')
+        else:
+            emoji = config['wordart_emoji']
+
+        string = string.strip()
         if string == '':
             await message.channel.send('Usage: --wa message to create word art.\nMessages must be very short: around 6 characters.')
         else:
             try:
-                await message.channel.send(content = wordart.translate(string, config['wordart_emoji']))
+                await message.channel.send(content = wordart.translate(string, emoji))
             except discord.errors.HTTPException: # Message was too long for HTTP request
                 await message.channel.send(content = 'Sorry, message too long.')
     elif config['mcserv'] and message.content.startswith('--minecraft'):
