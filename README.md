@@ -6,6 +6,7 @@ Dependencies:
     
 * discord.py, for general use.
 * requests, for xkcd, scryfall.
-* paramiko, for minecraft server integration. 
+* emoji, for operating wordart.
+* paramiko, for minecraft server integration.
 
 Paramiko is an optional dependancy and will not be imported if ```mcserv``` is ```false``` in the config. 
