@@ -19,7 +19,7 @@ def translate(string, replacement):
 
     for line in range(5):
         for letter in letters:
-            output += letter[line].replace('?', replacement).replace(' ', '      ')
+            output += letter[line].replace(' ', '      ').replace('?', replacement)
             output += '    '
         output += '\n'
 
@@ -28,8 +28,8 @@ def translate(string, replacement):
 def handle_wordart_request(string, default_emoji):
     character = re.search(r'<:[\w]+:[\d]{18}>', string) # Matches discord emojis (<:name:000000000000000000>)
     if character:
-        character = character.group(0)
-        string = string.replace(character, '')
+        character = character.group(0).strip()
+        string = string.replace(character, '').strip()
     else:
         for c in string:
             if c in emoji.UNICODE_EMOJI:
