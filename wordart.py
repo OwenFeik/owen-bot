@@ -1,6 +1,8 @@
 import json
+import re
+import emoji
 
-def translate(string, emoji):
+def translate(string, replacement):
     """string: alpha string to translate. emoji: discord formatted emoji reference: i.e. <:emojiname:000000000000000000>"""
     
     with open('resources/alphabet.json', 'r') as f:
@@ -17,11 +19,27 @@ def translate(string, emoji):
 
     for line in range(5):
         for letter in letters:
-            output += letter[line].replace('?', emoji).replace(' ', '      ')
+            output += letter[line].replace('?', replacement).replace(' ', '      ')
             output += '    '
         output += '\n'
 
     return output
+
+def handle_wordart_request(string, default_emoji):
+    character = re.search(r'<:[\w]+:[\d]{18}>', string) # Matches discord emojis (<:name:000000000000000000>)
+    if character:
+        character = character.group(0)
+        string = string.replace(character, '')
+    else:
+        for c in string:
+            if c in emoji.UNICODE_EMOJI:
+                character = c
+                string = string.replace(c, '').strip()
+                break
+        else:
+            character = default_emoji
+
+    return translate(string, character)
 
 def vaporwave(string):
     normal = u' 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~'
