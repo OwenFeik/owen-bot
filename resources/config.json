@@ -5,6 +5,7 @@
     "announcer": false,
     "creeper": true,
     "token": "Your discord client secret.",
+    "dm_role": "DM",
     "mcserv": false,
     "wordart_emoji": "<:bean:678902934393585685>",
     "mcserv_config": {

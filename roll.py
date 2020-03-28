@@ -36,7 +36,7 @@ def handle_command(string, mention):
         message = f'{mention} rolled {str(rolls[0])}'
     else:
         total = 0
-        message = f'{mention} rolled `{string}`:\n'
+        message = f'{mention} rolled `{string.strip()}`:\n'
         for r in rolls:
             message += f'{str(r)}\n'
             total = r.apply(total)

@@ -61,7 +61,7 @@ async def on_message(message):
         else:
             for member in message.guild.members:
                 for role in member.roles:
-                    if role.name == 'DM':
+                    if role.name == config['dm_role']:
                         await member.send(result)
                         if message.author != member:
                             await message.author.send(result)
