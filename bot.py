@@ -4,6 +4,7 @@ import discord #Run bot
 import scryfall #API call functions
 import time # Use sleep to time some things
 import xkcd # Get xkcd comics, update database
+import roll # Roll dice
 import threading # Update xkcds regularly on seperate thread
 import asyncio # Used to run database updates
 import utilities # Send formatted log messages, load configuration file
@@ -37,7 +38,6 @@ async def on_message(message):
             else: # If it's a card object, grab the message and send it
                 for face in found.embed:
                     await message.channel.send(embed = face)
-
     if config['xkcd'] and message.content.startswith('--xkcd'): # If the user wants an xkcd comic
         query = message.content[6:] # Everything except --xkcd
         if query:
@@ -52,6 +52,8 @@ async def on_message(message):
         else:
             msg = 'Use "--xkcd comic name" to find an xkcd comic. Approximate names should be good enough.'
             await message.channel.send(msg)
+    elif message.content.startswith('--roll'):
+        await message.channel.send(roll.handle_command(message.content[6:], message.author.mention))
     elif message.content.startswith('--weeb'):
         img = discord.Embed()
         img.set_image(url = 'https://i.imgur.com/mzbvy4b.png')
