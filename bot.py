@@ -54,6 +54,19 @@ async def on_message(message):
             await message.channel.send(msg)
     elif message.content.startswith('--roll'):
         await message.channel.send(roll.handle_command(message.content[6:], message.author.mention))
+    elif message.content.startswith('--dmroll') or message.content.startswith('--gmroll'):
+        result = roll.handle_command(message.content[8:], message.author.nick)
+        if result == 'Invalid format.':
+            await message.channel.send(result)
+        else:
+            for member in message.guild.members:
+                for role in member.roles:
+                    if role.name == 'DM':
+                        await member.send(result)
+                        if message.author != member:
+                            await message.author.send(result)
+                        return
+            await message.channel.send('No DM found!')
     elif message.content.startswith('--weeb'):
         img = discord.Embed()
         img.set_image(url = 'https://i.imgur.com/mzbvy4b.png')
