@@ -53,7 +53,11 @@ async def on_message(message):
             msg = 'Use "--xkcd comic name" to find an xkcd comic. Approximate names should be good enough.'
             await message.channel.send(msg)
     elif message.content.startswith('--roll'):
-        await message.channel.send(roll.handle_command(message.content[6:], message.author.mention))
+        resp = roll.handle_command(message.content[6:], message.author.mention)
+        try:
+            await message.channel.send(content = resp)
+        except discord.errors.HTTPException: # Message was too long for HTTP request
+            await message.channel.send(content = 'Sorry, roll too long to send.')
     elif message.content.startswith('--dmroll') or message.content.startswith('--gmroll'):
         result = roll.handle_command(message.content[8:], message.author.nick)
         if result == 'Invalid format.':
@@ -62,14 +66,22 @@ async def on_message(message):
             for member in message.guild.members:
                 for role in member.roles:
                     if role.name == config['dm_role']:
-                        await member.send(result)
-                        if message.author != member:
-                            await message.author.send(result)
+                        try:
+                            await member.send(result)                            
+                            if message.author != member:
+                                await message.author.send(result)
+                        except discord.errors.HTTPException:
+                            await message.channel.send(content = 'Sorry, roll too long to send.')
                         return
             await message.channel.send('No DM found!')
     elif message.content.startswith('--weeb'):
         img = discord.Embed()
         img.set_image(url = 'https://i.imgur.com/mzbvy4b.png')
+        await message.channel.send(embed = img)
+    elif any(word in message.content.lower() for word in ['jojo', 'stardust', 'yare', 'daze', 'jotaro', 'joestar']):
+        img = discord.Embed()
+        img.set_image(url = 'https://i.imgur.com/mzbvy4b.png')
+        await message.channel.send(content = f'{message.author.mention}, there\'s something you should know.')
         await message.channel.send(embed = img)
     elif message.content.startswith('--reverse'):
         img = discord.Embed() 
