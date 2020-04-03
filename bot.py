@@ -57,7 +57,7 @@ async def on_message(message):
         try:
             await message.channel.send(content = resp)
         except discord.errors.HTTPException: # Message was too long for HTTP request
-            await message.channel.send(content = 'Sorry, roll too long to send.')
+            await message.channel.send(content = 'Sorry, ran into an error. Maybe your roll was too long to send.')
     elif message.content.startswith('--dmroll') or message.content.startswith('--gmroll'):
         result = roll.handle_command(message.content[8:], message.author.nick)
         if result == 'Invalid format.':
@@ -71,7 +71,7 @@ async def on_message(message):
                             if message.author != member:
                                 await message.author.send(result)
                         except discord.errors.HTTPException:
-                            await message.channel.send(content = 'Sorry, roll too long to send.')
+                            await message.channel.send(content = 'Sorry, ran into an error. Maybe your roll was too long to send.')
                         return
             await message.channel.send('No DM found!')
     elif message.content.startswith('--weeb'):

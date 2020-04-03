@@ -8,14 +8,35 @@ def handle_command(string, mention):
     roll = None
     op = '+'
 
+    operators = ['+', '-', '/', '*']
+
     try:
         for arg in arguments:
-            if re.match(r'^[0-9]*d[0-9]+[ADad]?$', arg):
-                roll = Roll(arg)
-                rolls.append(roll)
-                roll.set_operator(op)
-                op = '+'
-            elif arg in ['+', '-', '/', '*']:
+            die = re.search(r'[0-9]*d[0-9]+[ADad]*', arg)
+            if die:
+                die = die.group(0)
+                if die == arg:
+                    roll = Roll(arg)
+                    rolls.append(roll)
+                    roll.set_operator(op)
+                else:
+                    arg.replace(die, '')
+                    if arg[0] in operators:
+                        op = arg[0]
+                        arg = arg[1:]
+                    roll = Roll(die)
+                    rolls.append(roll)
+                    roll.set_operator(op)
+
+                    mods = re.findall('[+-/*][0-9]+', arg)
+                    for mod in mods:
+                        roll.add_modifier(Modifier.from_string(mod))
+                    keep = re.search('k[0-9]+', arg)
+                    if keep:
+                        roll.keep = int(keep.group(0)[1:])
+                
+                op = '+'                
+            elif arg in operators:
                 op = arg
             elif arg.isnumeric():
                 roll.add_modifier(Modifier(int(arg), op))
@@ -29,7 +50,6 @@ def handle_command(string, mention):
             else:
                 raise ValueError
     except Exception as e:
-        print(e)
         return 'Invalid format.'
 
     if len(rolls) == 1:
@@ -40,7 +60,7 @@ def handle_command(string, mention):
         for r in rolls:
             message += f'{str(r)}\n'
             total = r.apply(total)
-        message += f'Grand Total: {total}'
+        message += f'Grand Total: {int_if_whole(total)}'
 
     return message
 
@@ -49,12 +69,16 @@ class Roll():
         self.string = string
         self.adv = self.disadv = False
 
-        if string.upper()[-1] in ['A', 'D']:
-            if string.upper()[-1] == 'A':
-                self.adv = True
+        advscore = 0
+        while string[-1].upper() in ['A', 'D']:
+            if string[-1].upper() == 'A':
+                advscore += 1
             else:
-                self.disadv = True
+                advscore -= 1
             string = string[:-1]
+
+        self.adv = advscore > 0
+        self.disadv = advscore < 0
 
         qty, die = string.split('d')
         self.qty = int(qty) if len(qty) > 0 else 1
@@ -75,7 +99,7 @@ class Roll():
             string += f' {str(mod)}'
         if self.keep >= 0:
             string += f' keep {self.keep}'
-        string += f"`\t Roll{'s' if len(self.rolls) > 1 else ''}: {str(self.rolls)[1:-1]} \tTotal: {self.total}"
+        string += f"`\t Roll{'s' if len(self.rolls) > 1 else ''}: {str(self.rolls)[1:-1]} \tTotal: {int_if_whole(self.total)}"
 
         return string
 
@@ -142,6 +166,10 @@ class Modifier():
     def apply(self, val):
         return self.operation(val, self.val)
 
+    @staticmethod
+    def from_string(string):
+        return Modifier(int(string[1:]), string[0])
+
 def get_operator(opstr):
     return {
         '+': operator.add, 
@@ -149,3 +177,8 @@ def get_operator(opstr):
         '*': operator.mul, 
         '/': operator.truediv
     }[opstr]
+
+def int_if_whole(num):
+    if num // 1 == num:
+        return int(num)
+    return num
