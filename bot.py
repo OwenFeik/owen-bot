@@ -5,24 +5,54 @@ import scryfall #API call functions
 import time # Use sleep to time some things
 import xkcd # Get xkcd comics, update database
 import roll # Roll dice
-import threading # Update xkcds regularly on seperate thread
 import asyncio # Used to run database updates
 import utilities # Send formatted log messages, load configuration file
 import wordart # Create word out of emojis
 import random # Send one of four images at random
 
-client = discord.Client() # Create the client.
+commands = [
+    '--about',
+    '--all',
+    '--dmroll',
+    '--gmroll',
+    '--hello',
+    '--help',
+    '--minecraft',
+    '--reverse',
+    '--roll',
+    '--vw',
+    '--xkcd',
+    '--wa',
+    '--weeb'
+]
+
 config = utilities.load_config()
+command_help = utilities.load_help()
+
 if config['mcserv']:
     import mcserv # Optional Paramiko dependancy.
     mcserv_handler = mcserv.CommandHandler(config['mcserv_config'])
+else:
+    commands.remove('--minecraft')
+    del command_help['minecraft']
+
+if not config['xkcd']:
+    commands.remove('--xkcd')
+    del command_help['xkcd']
+
+client = discord.Client() # Create the client.
 
 @client.event
 async def on_message(message):
+    try:
+        user_string = f'{message.author.nick} ({message.author.name})'
+    except AttributeError:
+        user_string = f'{message.author.name}'
+    
     if message.content:
-        utilities.log_message(f'{message.author.nick} ({message.author.name}) sent: {message.content}')
+        utilities.log_message(f'{user_string} sent: {message.content}')
     else:
-        utilities.log_message(f'{message.author.nick} ({message.author.name}) sent an attachment.')
+        utilities.log_message(f'{user_string} sent an attachment.')
 
     #If we sent this message, do nothing
     if message.author == client.user:
@@ -38,7 +68,15 @@ async def on_message(message):
             else: # If it's a card object, grab the message and send it
                 for face in found.embed:
                     await message.channel.send(embed = face)
-    if config['xkcd'] and message.content.startswith('--xkcd'): # If the user wants an xkcd comic
+    
+    if message.content.startswith('--help'):
+        string = message.content[6:].replace('--', '').strip()
+        if string in command_help:
+            msg = command_help[string]
+        else:
+            msg = f'I\'m afraid I can\'t help you with {string}.'
+        await message.channel.send(msg)
+    elif config['xkcd'] and message.content.startswith('--xkcd'): # If the user wants an xkcd comic
         query = message.content[6:] # Everything except --xkcd
         if query:
             if query[0] == ' ': # They may have put a space before their query
@@ -107,19 +145,15 @@ async def on_message(message):
         sender = str(message.author)
         response = mcserv_handler.handle_command(command, sender)
         await message.channel.send(content = response)
-    elif message.content.startswith('--'): # Handles commands (--)
+    elif message.content.startswith('--'): # Handles simple commands (--)
         if message.content.startswith('--about'): #Info
             msg = "Hi, I'm Owen's bot! I help by finding magic cards for you, among other things! Try --all, and message Owen if anything is acting up."
         elif message.content.startswith('--all'): #List all commands
-            msg = 'All commands:\n\n\t--about\n\t--all\n\t--hello\n\t--help\n\t--minecraft\n\t--no\n\t--reverse\n\t--syntax\n\t--vw\n\t--wa\n\t--weeb\n\t--xkcd'
+            msg = 'All commands:\n\n\t' + '\n\t'.join(commands)
         elif message.content.startswith('--easteregg'): #Easter egg
             msg = 'Smartarse'
         elif message.content.startswith('--hello'): #Hello World
             msg = f'Greetings, {message.author.mention}'
-        elif message.content.startswith('--help'): #Offer assistance
-            msg = 'Use [Card Name] to call me! Try --all or --syntax for more info.'
-        elif message.content.startswith('--syntax'): #Breakdown of bot syntax
-            msg = 'Syntax overview:\n\n\tCall a --command.\n\tFind a [card] like this.\n\tFind a specific [printing|like this]\n\tGet a [random] card.'
         elif message.content.startswith('--no'):
             msg = wordart.no
         else: #Otherwise, their command is invalid
@@ -176,6 +210,10 @@ async def on_ready():
     utilities.log_message(f'Logged in as {client.user.name} ID: {client.user.id}')
     utilities.log_message('==== BEGIN LOG ====')
 
-if config['xkcd']:
-    client.loop.create_task(update_xkcds_schedule(config['xkcd_interval']))
-client.run(config['token']) #Connect
+def main():
+    if config['xkcd']:
+        client.loop.create_task(update_xkcds_schedule(config['xkcd_interval']))
+    client.run(config['token']) #Connect
+
+if __name__ == '__main__':
+    main()

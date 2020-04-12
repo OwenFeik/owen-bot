@@ -12,3 +12,11 @@ def load_config(): # Load the config file
     except FileNotFoundError:
         log_message('No config file found.')
         exit()
+
+def load_help():
+    try:
+        with open('resources/help.json', 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        log_message('No help file found.')
+        return {}
