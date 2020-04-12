@@ -20,9 +20,9 @@ if config['mcserv']:
 @client.event
 async def on_message(message):
     if message.content:
-        print(message.author.name+': '+message.content)
+        utilities.log_message(f'{message.author.nick} ({message.author.name}) sent: {message.content}')
     else:
-        print(message.author.name+' sent an attachment.')
+        utilities.log_message(f'{message.author.nick} ({message.author.name}) sent an attachment.')
 
     #If we sent this message, do nothing
     if message.author == client.user:
@@ -131,51 +131,51 @@ async def on_message(message):
         await message.channel.send(embed = embed)
 
 @client.event
-async def on_voice_state_update(old, new): #When a user joins a voice channel
-    if new == client.user: #If it was this, ignore
+async def on_voice_state_update(member, before, after): #When a user joins a voice channel
+    if member == client.user: #If it was this, ignore
         return
     
-    chnl = new.voice.voice_channel #Voice channel person joined
+    chnl = after.channel #Voice channel person joined
 
     if chnl: #If they didn't leave a channel
-        if chnl == old.voice_channel: #If they are in the same channel
-            if new.voice.self_deaf:
-                print(new.name + ' deafened themself')
-            elif new.voice.self_mute:
-                print(new.name + ' muted themself')
+        if chnl == before.channel: #If they are in the same channel
+            if after.voice.self_deaf:
+                utilities.log_message(member.name + ' deafened themself')
+            elif after.voice.self_mute:
+                utilities.log_message(member.name + ' muted themself')
         else:
-            print(new.name + ' joined ' + str(chnl)) #Print the channel and user
+            utilities.log_message(member.name + ' joined ' + str(chnl)) #Print the channel and user
             if config['announcer']:    
-                vc = await client.join_voice_channel(new.voice.voice_channel) #Join the voice channel they joined
+                vc = await client.join_voice_channel(chnl) #Join the voice channel they joined
                 player = vc.create_ffmpeg_player('resources/user_joined.mp3') #Create player
-                utilities.log_message('Played user_joined.mp3 in ' + str(new.voice.voice_channel))
+                utilities.log_message('Played user_joined.mp3 in ' + str(chnl))
                 player.start() #Play sound
                 time.sleep(2) #Wait for sound to finish
                 await vc.disconnect() #Leave
     else:
-        if old.voice.voice_channel.voice_members: # Only play sound if the channel still has people in it
-            print(old.name + ' left ' + str(old.voice.voice_channel)) #Announce that someone left
+        if before.channel.members: # Only play sound if the channel still has people in it
+            utilities.log_message(member.name + ' left ' + str(before.channel)) #Announce that someone left
             if config['announcer']:
-                vc = await client.join_voice_channel(old.voice.voice_channel)
+                vc = await client.join_voice_channel(before.channel)
                 player = vc.create_ffmpeg_player('resources/user_left.mp3')
-                utilities.log_message('Played user_left.mp3 in ' + str(old.voice.voice_channel))
+                utilities.log_message('Played user_left.mp3 in ' + str(before.channel))
                 player.start()
                 time.sleep(2)
                 await vc.disconnect()
 
-def update_xkcds_schedule(period): # This will update the xkcd database regularly.
-    while True:
-        asyncio.new_event_loop().run_until_complete(xkcd.update_db())
-        time.sleep(period)
+async def update_xkcds_schedule(period): # This will update the xkcd database regularly.
+    await client.wait_until_ready()
+
+    while not client.is_closed():
+        await xkcd.update_db()
+        await asyncio.sleep(period)
 
 #Startup notification
 @client.event
 async def on_ready():
-    print('Logged in as')
-    print(client.user.name)
-    print(client.user.id)
-    print('---LOG---')
-    if config['xkcd']:
-        threading.Thread(target = update_xkcds_schedule, args = [config['xkcd_interval']]).start() # Regular event to update xkcd database
+    utilities.log_message(f'Logged in as {client.user.name} ID: {client.user.id}')
+    utilities.log_message('==== BEGIN LOG ====')
 
+if config['xkcd']:
+    client.loop.create_task(update_xkcds_schedule(config['xkcd_interval']))
 client.run(config['token']) #Connect

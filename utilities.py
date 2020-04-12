@@ -1,8 +1,9 @@
 import time # Send log messages with the current time
 import json # Load preferences
 
-def log_message(msg): # Send a log message that looks like: LOG 00:00> msg
-    print('LOG '+time.strftime('%H:%M',time.localtime(time.time()))+'> '+msg)
+def log_message(msg): 
+    timestring = time.strftime('%d/%m %T')
+    print(f'<{timestring}> {msg}')
     
 def load_config(): # Load the config file
     try:
