@@ -67,6 +67,8 @@ async def on_message(message):
     if message.author == client.user:
         return
 
+    delete_message = False
+
     #Handles card tags
     if config['scryfall'] and '[' in message.content and ']' in message.content:
         queries = scryfall.get_queries(message.content) # A list of query objects
@@ -103,6 +105,8 @@ async def on_message(message):
         resp = roll.handle_command(message.content[6:], message.author.mention)
         try:
             await message.channel.send(content = resp)
+            if resp != 'Invalid format.':
+                delete_message = True
         except discord.errors.HTTPException: # Message was too long for HTTP request
             await message.channel.send(content = 'Sorry, ran into an error. Maybe your roll was too long to send.')
     elif message.content.startswith('--dmroll') or message.content.startswith('--gmroll'):
@@ -117,6 +121,7 @@ async def on_message(message):
                             await member.send(result)                            
                             if message.author != member:
                                 await message.author.send(result)
+                            delete_message = True
                         except discord.errors.HTTPException:
                             await message.channel.send(content = 'Sorry, ran into an error. Maybe your roll was too long to send.')
                         return
@@ -145,12 +150,14 @@ async def on_message(message):
         img = discord.Embed() 
         img.set_image(url = random.choice(['https://i.imgur.com/yXEiYQ4.png', 'https://i.imgur.com/CSuB3ZW.png', 'https://i.imgur.com/3WDcYbV.png', 'https://i.imgur.com/IxDEdxW.png']))
         await message.channel.send(embed = img)
+        delete_message = True
     elif message.content.startswith('--vw'):
         string = message.content[4:].strip()
         if string == '':
             await message.channel.send('Usage: --vw message to vaporwave')
         else:
             await message.channel.send(content = wordart.vaporwave(message.content[4:].strip()))
+            delete_message = True
     elif message.content.startswith('--wa'):
         string = message.content[4:].lower().strip()
         if string == '':
@@ -158,6 +165,7 @@ async def on_message(message):
         else:
             try:
                 await message.channel.send(content = wordart.handle_wordart_request(string, config['wordart_emoji']))
+                delete_message = True
             except discord.errors.HTTPException: # Message was too long for HTTP request
                 await message.channel.send(content = 'Sorry, message too long.')
     elif config['mcserv'] and message.content.startswith('--minecraft'):
@@ -183,6 +191,13 @@ async def on_message(message):
         colour = discord.Colour.from_rgb(13, 181, 13)
         embed = discord.Embed(title = 'Awww mannn', url = 'https://www.youtube.com/watch?v=cPJUBQd-PNM', colour = colour) # link to "revenge" Minecraft parody
         await message.channel.send(embed = embed)
+    
+    if delete_message:
+        try:
+            await message.delete()
+            utilities.log_message(f'Deleted command message.')
+        except discord.errors.Forbidden:
+            utilities.log_message(f'Couldn\'t delete command message; insufficient permissions.')
 
 @client.event
 async def on_voice_state_update(member, before, after): #When a user joins a voice channel
