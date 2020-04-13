@@ -32,7 +32,8 @@ config = utilities.load_config()
 command_help = utilities.load_help()
 
 if config['dnd_spells']:
-    spell_handler = spellbook.Spellbook()
+    spell_handler = spellbook.Spellbook(config['spellbook_url'])
+    utilities.log_message('Successfully downloaded spellbook.')
 else:
     commands.remove('--spell')
     del command_help['spell']

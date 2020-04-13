@@ -3,6 +3,7 @@
     "xkcd_interval": 1800,
     "scryfall": true,
     "dnd_spells": true,
+    "spellbook_url": "https://raw.githubusercontent.com/OwenFeik/spells/master/resources/spells.json",
     "announcer": false,
     "creeper": true,
     "token": "Your discord authtoken here.",

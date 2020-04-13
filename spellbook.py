@@ -1,17 +1,16 @@
-import json
+import requests
 import difflib
 import discord
 
 # More or less copied over from https://github.com/OwenFeik/spells
 
 class Spellbook():
-    def __init__(self):
-        self.build_spellbook()
+    def __init__(self, spellbook_url):
+        self.build_spellbook(spellbook_url)
             
-    def build_spellbook(self):
+    def build_spellbook(self, spellbook_url):
         try:
-            with open('resources/spells.json', 'r') as f:
-                self.spells=[Spell.from_json(spell) for spell in json.load(f)]
+            self.spells=[Spell.from_json(spell) for spell in requests.get(spellbook_url).json()]
             self.names=[spell.name for spell in self.spells]
             self._names=[name.lower() for name in self.names] # Used to match queries through difflib
         except:
