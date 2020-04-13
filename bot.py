@@ -88,16 +88,10 @@ async def on_message(message):
             msg = f'I\'m afraid I can\'t help you with {string}.'
         await message.channel.send(msg)
     elif config['xkcd'] and message.content.startswith('--xkcd'): # If the user wants an xkcd comic
-        query = message.content[6:] # Everything except --xkcd
+        query = message.content[6:].strip() # Everything except --xkcd
         if query:
-            if query[0] == ' ': # They may have put a space before their query
-                query = query[1:]
-            data = xkcd.get_xkcd(query) # Returns name,uri,alttext
-            msg = data[0]
-            img = discord.Embed().set_image(url = data[1])
-            await message.channel.send(embed = img, content = msg)
-            msg = data[2]
-            await message.channel.send(content = msg)
+            comic = xkcd.get_xkcd(query) # Returns an embed object
+            await message.channel.send(embed = comic)
         else:
             msg = 'Use "--xkcd comic name" to find an xkcd comic. Approximate names should be good enough.'
             await message.channel.send(msg)
@@ -245,10 +239,6 @@ async def on_ready():
     utilities.log_message(f'Logged in as {client.user.name} ID: {client.user.id}')
     utilities.log_message('==== BEGIN LOG ====')
 
-def main():
-    if config['xkcd']:
-        client.loop.create_task(update_xkcds_schedule(config['xkcd_interval']))
-    client.run(config['token']) #Connect
-
-if __name__ == '__main__':
-    main()
+if config['xkcd']:
+    client.loop.create_task(update_xkcds_schedule(config['xkcd_interval']))
+client.run(config['token']) #Connect

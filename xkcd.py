@@ -1,6 +1,7 @@
 import requests # Pull raw data from xkcd website
 import re # Parse xkcd html for relevant data
 import asyncio # More efficiently collect xkcds
+import discord
 from difflib import SequenceMatcher # Get similarly named comics
 from database import Database # Database used to hold information on comics
 from utilities import log_message # Send messages in the log
@@ -48,14 +49,22 @@ def get_xkcd(query):
     db=Database('resources/bot.db')
     query=query.lower()
     if query=='random':
-        return db.get_random_xkcd()
+        xkcd_tuple = db.get_random_xkcd()
     elif query in ['new','newest']:
-        return db.get_newest_xkcd()
+        xkcd_tuple = db.get_newest_xkcd()
     elif query.isnumeric():
-        return db.get_id(query)
+        xkcd_tuple = db.get_id(query)
     elif list_check(query): # If there is a comic of this name
-        return db.get_xkcd(query)
-    return db.get_xkcd(sugg(query)) # Otherwise find a similar one
+        xkcd_tuple = db.get_xkcd(query)
+    else:
+        xkcd_tuple = db.get_xkcd(sugg(query)) # Otherwise find a similar one
+    return get_embed(xkcd_tuple)
+
+def get_embed(xkcd_tuple):
+    e = discord.Embed(title = xkcd_tuple[0])
+    e.set_image(url = xkcd_tuple[1])
+    e.set_footer(text = xkcd_tuple[2]) # Alt text
+    return e
 
 async def update_db():
     current=get_list() # list of comics currently in the database
