@@ -67,7 +67,11 @@ class Spell():
         e.add_field(name = 'Range', value = self.rnge, inline = True)
         e.add_field(name = 'Duration', value = self.duration, inline = True)
         e.add_field(name = 'Components', value = self.components, inline = False)
-        e.add_field(name = 'Description', value = self.desc, inline = False)
+        descs = chunk_spell_desc(self.desc)
+        e.add_field(name = 'Description', value = descs[0], inline = False)
+        if len(descs) > 1:
+            for d in descs[1:]:
+                e.add_field(name = u'\u200b', value = d, inline = False)
 
         return e
 
@@ -135,3 +139,20 @@ def get_embed_description(spell):
         description += ', Ritual'
 
     return description
+
+def chunk_spell_desc(desc):
+    if len(desc) < 1024:
+        return [desc]
+    desc = desc.split('\n\n')
+    
+    i = 0
+    while i < len(desc):
+        if len(desc[i]) > 1024:
+            if '\n' in desc[i]:
+                chunks = desc[i].split('\n')
+                del desc[i]
+                for c in reversed(chunks):
+                    desc.insert(i, c)
+        i += 1
+
+    return desc

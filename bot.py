@@ -125,7 +125,10 @@ async def on_message(message):
         if result_type == 'text':
             await message.channel.send(result)
         elif result_type == 'embed':
-            await message.channel.send(embed = result)
+            try:
+                await message.channel.send(embed = result)
+            except discord.errors.HTTPException:
+                await message.channel.send(content = 'Sorry, ran into an error. The spell may be too long to send.')
         else:
             await message.channel.send(f'Something went wrong when searching for "{message.content[6:].strip()}"')
     elif message.content.startswith('--weeb'):
