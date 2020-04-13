@@ -2,6 +2,7 @@
     "xkcd": true,
     "xkcd_interval": 1800,
     "scryfall": true,
+    "dnd_spells": true,
     "announcer": false,
     "creeper": true,
     "token": "Your discord authtoken here.",

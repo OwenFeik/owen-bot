@@ -8,6 +8,7 @@ import roll # Roll dice
 import asyncio # Used to run database updates
 import utilities # Send formatted log messages, load configuration file
 import wordart # Create word out of emojis
+import spellbook # Search for dungeons and dragons spells
 import random # Send one of four images at random
 
 commands = [
@@ -20,6 +21,7 @@ commands = [
     '--minecraft',
     '--reverse',
     '--roll',
+    '--spell',
     '--vw',
     '--xkcd',
     '--wa',
@@ -28,6 +30,12 @@ commands = [
 
 config = utilities.load_config()
 command_help = utilities.load_help()
+
+if config['dnd_spells']:
+    spell_handler = spellbook.Spellbook()
+else:
+    commands.remove('--spell')
+    del command_help['spell']
 
 if config['mcserv']:
     import mcserv # Optional Paramiko dependancy.
@@ -112,6 +120,14 @@ async def on_message(message):
                             await message.channel.send(content = 'Sorry, ran into an error. Maybe your roll was too long to send.')
                         return
             await message.channel.send('No DM found!')
+    elif message.content.startswith('--spell'):
+        result_type, result = spell_handler.handle_command(message.content[6:])
+        if result_type == 'text':
+            await message.channel.send(result)
+        elif result_type == 'embed':
+            await message.channel.send(embed = result)
+        else:
+            await message.channel.send(f'Something went wrong when searching for "{message.content[6:].strip()}"')
     elif message.content.startswith('--weeb'):
         img = discord.Embed()
         img.set_image(url = 'https://i.imgur.com/mzbvy4b.png')
