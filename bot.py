@@ -58,6 +58,11 @@ async def on_message(message):
     except AttributeError:
         user_string = f'{message.author.name}'
     
+    try:
+        name = message.author.nick
+    except:
+        name = message.author.name
+
     if message.content:
         utilities.log_message(f'{user_string} sent: {message.content}')
     else:
@@ -96,32 +101,35 @@ async def on_message(message):
             msg = 'Use "--xkcd comic name" to find an xkcd comic. Approximate names should be good enough.'
             await message.channel.send(msg)
     elif message.content.startswith('--roll'):
-        resp = roll.handle_command(message.content[6:], message.author.mention)
+        # Success indicates successful parsing, and if true resp will be an embed
+        success, resp = roll.handle_command(message.content[6:], name)
         try:
-            await message.channel.send(content = resp)
-            if resp != 'Invalid format.':
+            if success:
+                await message.channel.send(embed = resp)
                 delete_message = True
+            else:
+                await message.channel.send(content = resp)
         except discord.errors.HTTPException: # Message was too long for HTTP request
             await message.channel.send(content = 'Sorry, ran into an error. Maybe your roll was too long to send.')
     elif message.content.startswith('--dmroll') or message.content.startswith('--gmroll'):
-        result = roll.handle_command(message.content[8:], message.author.nick)
-        if result == 'Invalid format.':
-            await message.channel.send(result)
+        success, resp = roll.handle_command(message.content[8:], name)
+        if not success:
+            await message.channel.send(content = resp)
         else:
             for member in message.guild.members:
                 for role in member.roles:
                     if role.name == config['dm_role']:
                         try:
-                            await member.send(result)                            
+                            await member.send(embed = resp)                            
                             if message.author != member:
-                                await message.author.send(result)
+                                await message.author.send(embed = resp)
                             delete_message = True
                         except discord.errors.HTTPException:
                             await message.channel.send(content = 'Sorry, ran into an error. Maybe your roll was too long to send.')
                         return
             await message.channel.send('No DM found!')
     elif message.content.startswith('--spell'):
-        result_type, result = spell_handler.handle_command(message.content[6:])
+        result_type, result = spell_handler.handle_command(message.content[7:])
         if result_type == 'text':
             await message.channel.send(result)
         elif result_type == 'embed':
