@@ -80,7 +80,10 @@ class Roll():
         return self.desc_str(pad_desc) + self.roll_str(pad_roll)
 
     def desc_str(self, pad_to = 0):
-        string = f"{self.qty if self.qty > 1 else ''}d{self.die}"
+        if (self.adv or self.disadv) and (self.qty == 2):
+            string = f"d{self.die}"
+        else:
+            string = f"{self.qty if self.qty > 1 else ''}d{self.die}"
         string += f"{'a' if self.adv else ''}{'d' if self.disadv else ''}"
         if self.keep >= 0:
             string += f' keep {self.keep}'
