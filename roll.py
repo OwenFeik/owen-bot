@@ -3,14 +3,14 @@ import random
 import operator
 import discord
 
-def handle_command(string, mention, failstr = 'Invalid format.'):
+def handle_command(string, mention, failstr = 'Invalid format'):
     try:
         tokens = parse_roll(string)
         rolls = process_tokens(tokens)
         assert len(rolls) > 0
-    except:
+    except Exception as e:
         # False, failed to parse roll, returning error message
-        return False, failstr
+        return False, f'{failstr}: {e}'
 
     if len(rolls) == 1:
         title = f'{mention} rolled '
@@ -64,6 +64,9 @@ class Roll():
         qty, die = string.split('d')
         self.qty = int(qty) if len(qty) > 0 else 1
         self.die = int(die)
+
+        if self.qty > 1000:
+            raise ValueError('Maximum quantity exceeded.')
 
         self.modifiers = []
 
