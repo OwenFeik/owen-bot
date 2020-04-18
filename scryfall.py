@@ -149,20 +149,32 @@ def get_suggs(query):
 
 #Capitalise a card name
 def capitalise(name):
-    out=''
-    for i in range(0,len(name)): #For each character
-        if (name[i].isalnum() and not name[i-1].isalnum()) or i==0: #If it's a letter preceded by a non-letter
-            out+=name[i].capitalize() #Add the capital version to the out string
-        else: #Otherwise, just normal character
-            out+=name[i] #To out string
-    return out
+    name = name.strip().lower()
+    name = name.replace(name[0], name[0].upper(), 1)
+    skip = [
+        'a',
+        'an',
+        'at',
+        'and',
+        'are',
+        'but',
+        'by',
+        'for',
+        'from',
+        'not',
+        'nor',
+        'of',
+        'or',
+        'so',
+        'the',
+        'with',
+        'yet'
+    ]
 
-# Remove spaces from the start and end of a string
-def clean_query(string):
-    if string=='':
-        return string
-    if string[0]==' ':
-        string=string[1:] 
-    if string[len(string)-1]==' ':
-        string=string[:len(string)-1]
-    return string
+    words = name.split(' ')
+    for i in range(1, len(words)):
+        c = words[i][0]
+        if c.isalpha() and not words[i] in skip or i == len(words) - 1:
+            words[i] = words[i].replace(c, c.upper(), 1)
+    
+    return ' '.join(words)
