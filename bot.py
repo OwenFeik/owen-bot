@@ -178,7 +178,7 @@ async def on_message(message):
             if string == '':
                 await message.channel.send('Usage: --vw message to vaporwave')
             else:
-                await message.channel.send(content = wordart.vaporwave(message.content[4:].strip()))
+                await message.channel.send(content = wordart.vaporwave(string))
                 delete_message = True
     elif message.content.startswith('--wa'):
         string = message.content[4:].lower().strip()
