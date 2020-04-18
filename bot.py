@@ -3,13 +3,15 @@
 import discord #Run bot
 import scryfall #API call functions
 import time # Use sleep to time some things
+import random # Send one of four images at random
+import re # Find ids, etc
+import asyncio
+
 import xkcd # Get xkcd comics, update database
 import roll # Roll dice
-import asyncio # Used to run database updates
 import utilities # Send formatted log messages, load configuration file
 import wordart # Create word out of emojis
 import spellbook # Search for dungeons and dragons spells
-import random # Send one of four images at random
 
 commands = [
     '--about',
@@ -143,10 +145,18 @@ async def on_message(message):
         img = discord.Embed()
         img.set_image(url = 'https://i.imgur.com/mzbvy4b.png')
         await message.channel.send(embed = img)
-    elif any(word in message.content.lower() for word in ['jojo', 'stardust', 'yare', 'daze', 'jotaro', 'joestar']):
-        img = discord.Embed()
+    elif any(word in message.content.lower() for word in [
+        'jojo',
+        'stardust',
+        'yare',
+        'daze',
+        'jotaro',
+        'joestar',
+        'polnareff',
+        'jo jo'
+    ]):
+        img = discord.Embed(description = f'{message.author.mention}, there\'s something you should know.')
         img.set_image(url = 'https://i.imgur.com/mzbvy4b.png')
-        await message.channel.send(content = f'{message.author.mention}, there\'s something you should know.')
         await message.channel.send(embed = img)
     elif message.content.startswith('--reverse'):
         img = discord.Embed() 
@@ -155,11 +165,21 @@ async def on_message(message):
         delete_message = True
     elif message.content.startswith('--vw'):
         string = message.content[4:].strip()
-        if string == '':
-            await message.channel.send('Usage: --vw message to vaporwave')
+        mentions = re.findall(r'<@!?\d{16,}>', string)
+        for m in mentions:
+            user_id = m[3:-1] if m.startswith('<@!') else m[2:-1]
+            user = client.get_user(int(user_id))
+            if user:
+                string = string.replace(m, user.name)
+            else:
+                await message.channel.send('Sorry, I don\'t really like mentions.')
+                break
         else:
-            await message.channel.send(content = wordart.vaporwave(message.content[4:].strip()))
-            delete_message = True
+            if string == '':
+                await message.channel.send('Usage: --vw message to vaporwave')
+            else:
+                await message.channel.send(content = wordart.vaporwave(message.content[4:].strip()))
+                delete_message = True
     elif message.content.startswith('--wa'):
         string = message.content[4:].lower().strip()
         if string == '':
