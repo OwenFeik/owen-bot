@@ -2,6 +2,7 @@
     "about": "A quick summary of what the bot is and does.",
     "all": "List all commands available.",
     "dmroll": "Roll a die such that only the DM can see the result. Will only work if someone has the \"DM\" role. See the help for \"roll\" for syntax.",
+    "gmroll": "Roll a die such that only the DM can see the result. Will only work if someone has the \"DM\" role. See the help for \"roll\" for syntax.",
     "hello": "Say hi to me! I'll say hi back.",
     "help": "Use \"--help <command>\" to get help about a specific command",
     "magic": "Search for Magic cards as follows:\nFind a [card] like this.\nFind a specific [printing|like this]\nGet a [random] card.",

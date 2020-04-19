@@ -60,13 +60,17 @@ async def on_message(message):
     
     try:
         name = message.author.nick
-    except:
+    except AttributeError:
         name = message.author.name
 
+    guild_string = message.guild
+    if guild_string is None:
+        guild_string = 'me'
+
     if message.content:
-        utilities.log_message(f'{user_string} sent: {message.content}')
+        utilities.log_message(f'{user_string} sent "{message.content}" to {guild_string}.')
     else:
-        utilities.log_message(f'{user_string} sent an attachment.')
+        utilities.log_message(f'{user_string} sent an attachment to {guild_string}.')
 
     #If we sent this message, do nothing
     if message.author == client.user:
@@ -116,6 +120,7 @@ async def on_message(message):
         if not success:
             await message.channel.send(content = resp)
         else:
+            found_dm = False
             for member in message.guild.members:
                 for role in member.roles:
                     if role.name == config['dm_role']:
@@ -126,8 +131,11 @@ async def on_message(message):
                             delete_message = True
                         except discord.errors.HTTPException:
                             await message.channel.send(content = 'Sorry, ran into an error. Maybe your roll was too long to send.')
-                        return
-            await message.channel.send('No DM found!')
+                        found_dm = True
+                if found_dm:
+                    break
+            else:
+                await message.channel.send('No DM found!')
     elif message.content.startswith('--spell'):
         result_type, result = spell_handler.handle_command(message.content[7:])
         if result_type == 'text':
@@ -187,7 +195,7 @@ async def on_message(message):
         elif message.content.startswith('--no'):
             msg = wordart.no
         else: #Otherwise, their command is invalid
-            msg = 'What\'s this? I don\'t understand that! Maybe try --help'
+            msg = 'I\'m afraid I don\'t understand that! Maybe try --help'
         await message.channel.send(msg)
     elif config['creeper'] and 'creeper' in message.content.lower():
         colour = discord.Colour.from_rgb(13, 181, 13)
