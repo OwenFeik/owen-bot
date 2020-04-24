@@ -106,7 +106,7 @@ class Roll():
         else:
             string += f"\t Roll: {self.rolls[0]}"
             if self.modifiers:
-                string += f" \tTotal {clean_number(self.total)}"
+                string += f" \tTotal: {clean_number(self.total)}"
 
         while len(string) < pad_to:
             string += ' '
