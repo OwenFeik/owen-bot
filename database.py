@@ -83,8 +83,12 @@ class Roll_Database(Database):
         )
 
     def insert_roll(self, roll, user, server):
-        data = (roll.desc_str, ','.join(roll.rolls), user.id, server.id)
+        rolls_str = ','.join([str(r) for r in roll.rolls])
+        desc_str = roll.desc_str() 
+        data = (desc_str, rolls_str, user.id, server.id)
         self.execute('INSERT INTO rolls VALUES(?, ?, ?, ?)', data)
+        utilities.log_message(f'Successfully saved roll: {desc_str}.')
+        self.save()
 
 class XKCD_Database(Database):
     def __init__(self, db_file):

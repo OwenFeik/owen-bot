@@ -10,7 +10,7 @@ def handle_command(string, **kwargs):
     
     # One of these two must be supplied
     user = kwargs.get('user')
-    mention = kwargs.get('mention', user.mention)
+    mention = kwargs.get('mention', user.display_name)
 
     server = kwargs.get('server')
     db = kwargs.get('database')

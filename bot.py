@@ -63,19 +63,14 @@ async def on_message(message):
         db.insert_user(message.author)
         db.insert_server(message.guild)
 
-    try:
-        user_string = f'{message.author.nick} ({message.author.name})'
-    except AttributeError:
-        user_string = f'{message.author.name}'
-
     guild_string = message.guild
     if guild_string is None:
         guild_string = 'me'
 
     if message.content:
-        utilities.log_message(f'{user_string} sent "{message.content}" to {guild_string}.')
+        utilities.log_message(f'{message.author.display_name} sent "{message.content}" to {guild_string}.')
     else:
-        utilities.log_message(f'{user_string} sent an attachment to {guild_string}.')
+        utilities.log_message(f'{message.author.display_name} sent an attachment to {guild_string}.')
 
     #If we sent this message, do nothing
     if message.author == client.user:
@@ -231,39 +226,46 @@ async def on_message(message):
             utilities.log_message(f'Deleted command message.')
         except discord.errors.Forbidden:
             utilities.log_message(f'Couldn\'t delete command message; insufficient permissions.')
+        except discord.errors.NotFound:
+            utilities.log_message(f'Couldn\'t find message to delete. Already gone?')
 
-# @client.event
-# async def on_voice_state_update(member, before, after): #When a user joins a voice channel
-#     if member == client.user: #If it was this, ignore
-#         return
+@client.event
+async def on_voice_state_update(member, before, after): #When a user joins a voice channel
+    if member == client.user: #If it was this, ignore
+        return
     
-#     chnl = after.channel #Voice channel person joined
+    chnl = after.channel #Voice channel person joined
 
-#     if chnl: #If they didn't leave a channel
-#         if chnl == before.channel: #If they are in the same channel
-#             if after.voice.self_deaf:
-#                 utilities.log_message(member.name + ' deafened themself')
-#             elif after.voice.self_mute:
-#                 utilities.log_message(member.name + ' muted themself')
-#         else:
-#             utilities.log_message(member.name + ' joined ' + str(chnl)) #Print the channel and user
-#             if config['announcer']:    
-#                 vc = await client.join_voice_channel(chnl) #Join the voice channel they joined
-#                 player = vc.create_ffmpeg_player('resources/user_joined.mp3') #Create player
-#                 utilities.log_message('Played user_joined.mp3 in ' + str(chnl))
-#                 player.start() #Play sound
-#                 time.sleep(2) #Wait for sound to finish
-#                 await vc.disconnect() #Leave
-#     else:
-#         if before.channel.members: # Only play sound if the channel still has people in it
-#             utilities.log_message(member.name + ' left ' + str(before.channel)) #Announce that someone left
-#             if config['announcer']:
-#                 vc = await client.join_voice_channel(before.channel)
-#                 player = vc.create_ffmpeg_player('resources/user_left.mp3')
-#                 utilities.log_message('Played user_left.mp3 in ' + str(before.channel))
-#                 player.start()
-#                 time.sleep(2)
-#                 await vc.disconnect()
+    if chnl: #If they didn't leave a channel
+        if chnl == before.channel: #If they are in the same channel
+
+            if before.self_deaf != after.self_deaf:
+                utilities.log_message(f'{member.display_name} toggled deaf to {after.self_deaf}.')
+            elif before.self_mute != after.self_mute:
+                utilities.log_message(f'{member.display_name} toggled mute to {after.self_mute}.')
+            elif before.mute != after.mute:
+                utilities.log_message(f'{member.display_name} had mute toggled to {after.mute}.')
+            elif before.deaf != after.deaf:
+                utilities.log_message(f'{member.display_name} had deaf toggled to {after.deaf}.')
+        else:
+            utilities.log_message(member.name + ' joined ' + str(chnl)) #Print the channel and user
+            if config['announcer']:    
+                vc = await client.join_voice_channel(chnl) #Join the voice channel they joined
+                player = vc.create_ffmpeg_player('resources/user_joined.mp3') #Create player
+                utilities.log_message('Played user_joined.mp3 in ' + str(chnl))
+                player.start() #Play sound
+                time.sleep(2) #Wait for sound to finish
+                await vc.disconnect() #Leave
+    else:
+        utilities.log_message(member.name + ' left ' + str(before.channel)) #Announce that someone left
+        if before.channel.members: # Only play sound if the channel still has people in it
+            if config['announcer']:
+                vc = await client.join_voice_channel(before.channel)
+                player = vc.create_ffmpeg_player('resources/user_left.mp3')
+                utilities.log_message('Played user_left.mp3 in ' + str(before.channel))
+                player.start()
+                time.sleep(2)
+                await vc.disconnect()
 
 async def update_xkcds_schedule(period): # This will update the xkcd database regularly.
     await client.wait_until_ready()
