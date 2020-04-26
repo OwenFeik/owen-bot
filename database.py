@@ -83,7 +83,7 @@ class Roll_Database(Database):
         )
 
     def insert_roll(self, roll, user, server):
-        data = (roll.desc_str, ','.join(roll.rolls), user.id, server.id)
+        data = (roll.desc_str(), ','.join([str(r) for r in roll.rolls]), user.id, server.id)
         self.execute('INSERT INTO rolls VALUES(?, ?, ?, ?)', data)
 
 class XKCD_Database(Database):
