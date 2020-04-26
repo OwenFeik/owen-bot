@@ -12,6 +12,7 @@ import roll # Roll dice
 import utilities # Send formatted log messages, load configuration file
 import wordart # Create word out of emojis
 import spellbook # Search for dungeons and dragons spells
+import database
 
 commands = [
     '--about',
@@ -52,6 +53,8 @@ if not config['xkcd']:
     del command_help['xkcd']
 
 client = discord.Client() # Create the client.
+db = database.Discord_Database(config['db_file'])
+roll_db = database.Roll_Database(config['db_file'])
 
 @client.event
 async def on_message(message):
@@ -59,11 +62,6 @@ async def on_message(message):
         user_string = f'{message.author.nick} ({message.author.name})'
     except AttributeError:
         user_string = f'{message.author.name}'
-    
-    try:
-        name = message.author.nick
-    except AttributeError:
-        name = message.author.name
 
     guild_string = message.guild
     if guild_string is None:
@@ -108,7 +106,7 @@ async def on_message(message):
             await message.channel.send(msg)
     elif message.content.startswith('--roll'):
         # Success indicates successful parsing, and if true resp will be an embed
-        success, resp = roll.handle_command(message.content[6:], name)
+        success, resp = roll.handle_command(message.content[6:], user = message.author, server = message.guild, database = roll_db)
         try:
             if success:
                 await message.channel.send(embed = resp)
@@ -118,7 +116,7 @@ async def on_message(message):
         except discord.errors.HTTPException: # Message was too long for HTTP request
             await message.channel.send(content = 'Sorry, ran into an error. Maybe your roll was too long to send.')
     elif message.content.startswith('--dmroll') or message.content.startswith('--gmroll'):
-        success, resp = roll.handle_command(message.content[8:], name)
+        success, resp = roll.handle_command(message.content[8:], user = message.author, server = message.guild, database = roll_db)
         if not success:
             await message.channel.send(content = resp)
         else:

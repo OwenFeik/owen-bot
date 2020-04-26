@@ -3,7 +3,18 @@ import random
 import operator
 import discord
 
-def handle_command(string, mention, failstr = 'Invalid format'):
+import database
+
+def handle_command(string, **kwargs):
+    failstr = kwargs.get('failstr', 'Invalid format')
+    
+    # One of these two must be supplied
+    user = kwargs.get('user')
+    mention = kwargs.get('mention', user.mention)
+
+    server = kwargs.get('server')
+    db = kwargs.get('database')
+
     try:
         tokens = parse_roll(string)
         rolls = process_tokens(tokens)
@@ -12,6 +23,17 @@ def handle_command(string, mention, failstr = 'Invalid format'):
         # False, failed to parse roll, returning error message
         return False, f'{failstr}: {e}'
 
+    if server and user:
+        if type(db) == str:
+            db = database.Roll_Database(db)
+        
+        for roll in rolls:
+            db.insert_roll(roll, user, server)
+
+    # True; succeeded, supplying an embed
+    return True, build_embed(rolls, mention, string)
+
+def build_embed(rolls, mention, string):
     if len(rolls) == 1:
         title = f'{mention} rolled '
         title += 'a die:' if len(rolls[0].rolls) == 1 else 'some dice:'
@@ -35,8 +57,7 @@ def handle_command(string, mention, failstr = 'Invalid format'):
         title = title
     )
 
-    # True; succeeded, supplying an embed
-    return True, embed
+    return embed
 
 class Roll():
     def __init__(self, string):
