@@ -58,6 +58,11 @@ roll_db = database.Roll_Database(config['db_file'])
 
 @client.event
 async def on_message(message):
+
+    if message.guild is not None:
+        db.insert_user(message.author)
+        db.insert_server(message.guild)
+
     try:
         user_string = f'{message.author.nick} ({message.author.name})'
     except AttributeError:
