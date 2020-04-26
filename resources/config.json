@@ -7,6 +7,7 @@
     "announcer": false,
     "creeper": true,
     "token": "Your discord authtoken here.",
+    "db_file": "resources/bot.db",
     "dm_role": "DM",
     "mcserv": false,
     "wordart_emoji": "<:bean:678902934393585685>",
