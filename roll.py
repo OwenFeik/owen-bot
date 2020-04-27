@@ -360,7 +360,7 @@ def stats_embed(data, mention):
 
         embed.add_field(
             name = f'd{die} ({len(rolls)} rolled)',
-            value = f'```{avg} ({avg - ((die + 1) / 2)})```',
+            value = f'```{avg} ({round(avg - ((die + 1) / 2), 1)})```',
             inline = True
         )
 
