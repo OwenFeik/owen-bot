@@ -9,7 +9,7 @@
     "minecraft": "Submit a vote to reboot the minecraft server. Usage: \"--minecraft reboot\".",
     "no": "Send a firm denial.",
     "reverse": "Say \"no u\" pictorially.",
-    "roll": "Roll a die. Syntax: `<quantity>d<size><a or d> k<amount> +<mod>`. Some examples:\n\t`--roll d20a`: roll a d20 with advantage.\n\t`--roll 4d6k3`: roll 4d6, keeping the 3 highest.\n\t`--roll 2d4 + 2 1d6 + 3`: roll 2d4 and add 2, roll a d6 and add 3.\n\t`--roll d8 * 12 / 6 / 2d4 + 3`: roll a d8, multiply the result by 12 and divide it by 6, then divide this by the result of rolling 2d4 and adding 3.",
+    "roll": "Roll a die. Syntax: `<quantity>d<size><a or d> k<amount> +<mod>`. Alternately, view stats on your rolls with \"--roll stats\". Some examples:\n\t`--roll d20a`: roll a d20 with advantage.\n\t`--roll 4d6k3`: roll 4d6, keeping the 3 highest.\n\t`--roll 2d4 + 2 1d6 + 3`: roll 2d4 and add 2, roll a d6 and add 3.\n\t`--roll d8 * 12 / 6 / 2d4 + 3`: roll a d8, multiply the result by 12 and divide it by 6, then divide this by the result of rolling 2d4 and adding 3.",
     "spell": "Find information on a Dungeons and Dragons spell. Usage: \"--spell <spell name>\".",
     "vw": "Convert the input text into unicode wide text. Usage: \"--vw <text>\".",
     "wa": "Convert the input text into emoji wordart. A default emoji will be used or to use a different emoji you may include it in the text of your message. Usage: \"--wa <text>\".",
