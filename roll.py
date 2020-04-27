@@ -22,17 +22,17 @@ def handle_command(string, **kwargs):
             db = database.Roll_Database(db)
         
         return True, stats_embed(db.get_rolls(user, server), mention)
-
-    if is_legal_roll(string):
-        rolls = [Roll(string)]        
-    else:
-        try:
+    
+    try:
+        if is_legal_roll(string):
+            rolls = [Roll(string)]
+        else:
             tokens = parse_roll(string)
             rolls = process_tokens(tokens)
             assert len(rolls) > 0
-        except Exception as e:
-            # False, failed to parse roll, returning error message
-            return False, f'{failstr}: {e}'
+    except Exception as e:
+        # False, failed to parse roll, returning error message
+        return False, f'{failstr}: {e}'
 
     if server and user:
         if type(db) == str:
