@@ -84,11 +84,18 @@ class Roll_Database(Database):
 
     def insert_roll(self, roll, user, server):
         rolls_str = ','.join([str(r) for r in roll.rolls])
-        desc_str = roll.desc_str() 
-        data = (desc_str, rolls_str, user.id, server.id)
+        dice_str = roll.dice_str() 
+        data = (dice_str, rolls_str, user.id, server.id)
         self.execute('INSERT INTO rolls VALUES(?, ?, ?, ?)', data)
-        utilities.log_message(f'Successfully saved roll: {desc_str}.')
         self.save()
+
+    def get_rolls(self, user, server):
+        id_tuple = (user.id, server.id)
+        self.execute(
+            'SELECT string, result FROM rolls WHERE user = ? AND server = ?;',
+            id_tuple
+        )
+        return self.cursor.fetchall()
 
 class XKCD_Database(Database):
     def __init__(self, db_file):

@@ -1,6 +1,7 @@
 import re
 import random
 import operator
+import heapq
 import discord
 
 import database
@@ -15,13 +16,23 @@ def handle_command(string, **kwargs):
     server = kwargs.get('server')
     db = kwargs.get('database')
 
-    try:
-        tokens = parse_roll(string)
-        rolls = process_tokens(tokens)
-        assert len(rolls) > 0
-    except Exception as e:
-        # False, failed to parse roll, returning error message
-        return False, f'{failstr}: {e}'
+    string = string.strip()
+    if string == 'stats':
+        if type(db) == str:
+            db = database.Roll_Database(db)
+        
+        return True, stats_embed(db.get_rolls(user, server), mention)
+
+    if is_legal_roll(string):
+        rolls = [Roll(string)]        
+    else:
+        try:
+            tokens = parse_roll(string)
+            rolls = process_tokens(tokens)
+            assert len(rolls) > 0
+        except Exception as e:
+            # False, failed to parse roll, returning error message
+            return False, f'{failstr}: {e}'
 
     if server and user:
         if type(db) == str:
@@ -86,6 +97,9 @@ class Roll():
         self.qty = int(qty) if len(qty) > 0 else 1
         self.die = int(die)
 
+        if (self.adv or self.disadv) and self.qty == 1:
+            self.qty = 2
+
         if self.qty > 1000:
             raise ValueError('Maximum quantity exceeded.')
 
@@ -119,6 +133,10 @@ class Roll():
 
         return string
 
+    def dice_str(self):
+        # Used for saving results in database
+        return f"{self.qty}d{self.die}"
+
     def roll_str(self, pad_to = 0):
         string = ''
         if len(self.rolls) > 1:
@@ -147,29 +165,19 @@ class Roll():
         return self._rolls
 
     def resolve(self):
-        if (self.adv or self.disadv) and self.qty == 1:
-            self.qty = 2
+        rolls = [random.randint(1, self.die) for _ in range(self.qty)]
 
-        rolls = []
-        for _ in range(0, self.qty):
-            result = random.randint(1, self.die)
-            rolls.append(result)
-
-        if self.keep >= 0 and self.keep < self.qty:
-            kept_rolls = rolls[:]
-            for _ in range(0, self.qty - self.keep):
-                kept_rolls.pop(kept_rolls.index(min(kept_rolls)))
+        if self.adv:
+            total = max(rolls)
+        elif self.disadv:
+            total = min(rolls)
+        elif self.keep >= 0:
+            total = sum(heapq.nlargest(self.keep, rolls))
         else:
-            kept_rolls = rolls
+            total = sum(rolls)
 
-        if (self.adv or self.disadv):
-            total = max(kept_rolls) if self.adv else min(kept_rolls)
-        else:
-            total = sum(kept_rolls)
+        total = self.apply_mods(total)
 
-        for mod in self.modifiers:
-            total = mod.apply(total)
-        
         self._rolls = rolls
         self._total = total
         self.resolved = True
@@ -178,6 +186,11 @@ class Roll():
 
     def apply(self, val):
         return self.operation(val, self.total)
+
+    def apply_mods(self, val):
+        for mod in self.modifiers:
+            val = mod.apply(val)
+        return val
 
     def set_operator(self, opstr):
         self.operation = get_operator(opstr)
@@ -326,3 +339,39 @@ def process_tokens(tokens):
             raise ValueError
     
     return rolls
+
+def stats_embed(data, mention):
+    results = {}
+    for string, result in data:
+        qty, die = string.split('d')
+        die = int(die)
+        rolls = [int(r) for r in result.split(',')]
+        if die in results:
+            results[die].extend(rolls)
+        else:
+            results[die] = rolls
+
+    embed = discord.Embed(
+        description = f'Roll stats for {mention}'
+    )
+    for die in [4, 6, 8, 10, 12, 20]:
+        rolls = results.get(die, [])
+        avg = round(sum(rolls) / len(rolls), 1) if rolls else 0
+
+        embed.add_field(
+            name = f'd{die} ({len(rolls)} rolled)',
+            value = f'```{avg} ({avg - ((die + 1) / 2)})```',
+            inline = True
+        )
+
+        try:
+            del results[die]
+        except KeyError:
+            pass
+
+    other = 0
+    for r in results:
+        other += len(results[r])
+    embed.set_footer(text = f'{other} other die rolled.')
+
+    return embed
