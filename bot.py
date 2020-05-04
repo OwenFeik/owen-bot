@@ -277,7 +277,7 @@ async def update_xkcds_schedule(period): # This will update the xkcd database re
 #Startup notification
 @client.event
 async def on_ready():
-    utilities.log_message(f'Logged in as {client.user.name} ID: {client.user.id}')
+    utilities.log_message(f'Logged in as {client.user.name}, ID: {client.user.id}')
     utilities.log_message('==== BEGIN LOG ====')
 
 if config['xkcd']:
