@@ -74,13 +74,14 @@ class Spell():
         e.add_field(name = 'Casting Time', value = self.cast, inline = True)
         e.add_field(name = 'Range', value = self.rnge, inline = True)
         e.add_field(name = 'Duration', value = self.duration, inline = True)
-        e.add_field(name = 'Components', value = self.components, inline = False)
+        e.add_field(name = 'Components', value = self.components, inline = False)   
         descs = chunk_spell_desc(self.desc)
         e.add_field(name = 'Description', value = descs[0], inline = False)
         if len(descs) > 1:
             for d in descs[1:]:
                 e.add_field(name = u'\u200b', value = d, inline = False)
-        e.add_field(name = 'Classes', value = ', '.join(self.classes), inline = False)
+        if self.classes:
+            e.add_field(name = 'Classes', value = ', '.join(self.classes), inline = False)
 
         return e
 
