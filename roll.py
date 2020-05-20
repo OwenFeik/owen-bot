@@ -356,11 +356,15 @@ def stats_embed(data, mention):
     )
     for die in [4, 6, 8, 10, 12, 20]:
         rolls = results.get(die, [])
+        die_avg = (die + 1) / 2
         avg = round(sum(rolls) / len(rolls), 1) if rolls else 0
+        delta = round(avg - die_avg, 1) if rolls else 0
+        delta_string = f'+{delta}' if delta > 0 else \
+            str(delta) if delta < 0 else 'avg'
 
         embed.add_field(
             name = f'd{die} ({len(rolls)} rolled)',
-            value = f'```{avg} ({round(avg - ((die + 1) / 2), 1)})```',
+            value = f'```{avg} ({delta_string})```',
             inline = True
         )
 
