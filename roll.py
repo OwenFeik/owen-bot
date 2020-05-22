@@ -3,7 +3,6 @@ import random
 import operator
 import heapq
 import discord
-
 import database
 
 def handle_command(string, **kwargs):
@@ -24,14 +23,9 @@ def handle_command(string, **kwargs):
         return True, stats_embed(db.get_rolls(user, server), mention)
     
     try:
-        if is_legal_roll(string):
-            rolls = [Roll(string)]
-        else:
-            tokens = parse_roll(string)
-            rolls = process_tokens(tokens)
-            assert len(rolls) > 0
+        rolls = get_rolls(string)
+        assert len(rolls) > 0
     except Exception as e:
-        # False, failed to parse roll, returning error message
         return False, f'{failstr}: {e}'
 
     if server and user:
@@ -71,48 +65,27 @@ def build_embed(rolls, mention, string):
     return embed
 
 class Roll():
-    def __init__(self, string):
-        self.string = string
-
-        self.adv = self.disadv = False
-        adv_str = re.search(r'[ad]+$', string)
-        if adv_str:
-            adv_str = adv_str.group(0)
-            advscore = adv_str.count('a') - adv_str.count('d')
-
-            self.adv = advscore > 0
-            self.disadv = advscore < 0
-
-            string = re.sub(r'[ad]+$', '', string)
-
-        self.keep = -1 # How many values to keep from the roll: -1 -> all
-        keep_str = re.search(r'k\d+$', string)
-        if keep_str:
-            keep_str = keep_str.group(0)
-            self.keep = int(keep_str[1:])
-
-            string = re.sub(r'k\d+$', '', string)
-
-        qty, die = string.split('d')
-        self.qty = int(qty) if len(qty) > 0 else 1
-        self.die = int(die)
-
-        if (self.adv or self.disadv) and self.qty == 1:
-            self.qty = 2
+    def __init__(self, qty, die, adv, disadv, keep, modifiers, operation):
+        self.qty = qty
+        self.die = die
+        self.adv = adv
+        self.disadv = disadv
+        self.keep = keep
+        self.modifiers = modifiers
+        self.operation = operation
 
         if self.qty > 1000:
             raise ValueError('Maximum quantity exceeded.')
 
-        self.modifiers = []
-
-        self.operation = operator.add
         self.resolved = False
-        
         self._rolls = []
         self._total = 0
 
     def __str__(self):
         return self.desc_str() + self.roll_str()
+
+    def __repr__(self):
+        return str(self)
 
     def full_str(self, pad_desc = 0, pad_roll = 0):
         return self.desc_str(pad_desc) + self.roll_str(pad_roll)
@@ -140,10 +113,10 @@ class Roll():
     def roll_str(self, pad_to = 0):
         string = ''
         if len(self.rolls) > 1:
-            string += f"\t Rolls: {str(self.rolls)[1:-1]}"
+            string += f"\tRolls: {str(self.rolls)[1:-1]}"
             string += f" \tTotal: {clean_number(self.total)}"
         else:
-            string += f"\t Roll: {self.rolls[0]}"
+            string += f"\tRoll: {self.rolls[0]}"
             if self.modifiers:
                 string += f" \tTotal: {clean_number(self.total)}"
 
@@ -227,117 +200,66 @@ def clean_number(num):
         return int(num)
     return round(num, 2)
 
-def is_legal_roll(string):
-    return bool(re.match(r'^\d*d\d+(k\d+|[ad]+)?$', string))
-
-def parse_roll(string):
-    terms = []
-    term = ''
-
-    is_operator = lambda s: s in ['+', '-', '*', '/']
-    is_int = lambda s: s.isnumeric()
-    is_simple_roll = lambda s: bool(re.match(r'^\d*d\d+$', s))
-    prev_is_int = lambda: terms and is_int(terms[-1])
-    prev_is_simple_roll = lambda: terms and is_simple_roll(terms[-1]) 
-    prev_is_legal_roll = lambda: terms and is_legal_roll(terms[-1])
-
-    for c in string.strip().lower().replace('keep', 'k'):
-        isnumber = term.isnumeric()
-        isroll = bool(re.match(r'^\d*d\d*$', term))
-        issimpleroll = is_simple_roll(term)
-        isadvroll = bool(re.match(r'^\d*d\d+[ad]+$', term))
-        iskeeproll = bool(re.match(r'^\d*d\d+k\d*$', term))
-        islegalroll = is_legal_roll(term)
-        isanyroll = isroll or issimpleroll or isadvroll or iskeeproll or islegalroll 
-        isempty = term == ''
-
-        if c.isnumeric():
-            if isnumber or isroll or iskeeproll or isempty:
-                term += c
-            else:
-                print(term)
-                raise ValueError(f'Anomalous digit: {c}.')
-        elif is_operator(c):
-            if isanyroll or isnumber:
-                terms.append(term)
-                terms.append(c)
-                term = ''
-            elif (prev_is_int() or prev_is_legal_roll()) and isempty:
-                terms.append(c)
-            else:
-                raise ValueError(f'Anomalous operator: {c}.')
-        elif c == 'd':
-            if isnumber or issimpleroll or isadvroll or isempty:
-                term += c
-            else:
-                raise ValueError(f'Anomalous d.')
-        elif c in ['a', 'k']:
-            if prev_is_simple_roll() and isempty:
-                term = terms[-1]
-                term += c
-                del terms[-1]
-            elif c == 'a' and (issimpleroll or isadvroll):
-                term += c
-            elif c == 'k' and issimpleroll:
-                term += c
-            else:
-                raise ValueError(f'Anomalous character: {c}.')
-        elif c == ' ':
-            if islegalroll or isnumber:
-                terms.append(term)
-                term = ''
-        else:
-            raise ValueError(f'Illegal character: {c}.')
-    if term:
-        terms.append(term)
-
-    return terms
-
-def process_tokens(tokens):
+def get_rolls(string):
     rolls = []
-    roll = None
-    op = None
-    const = None
-    modqueue = []
-
-    operators = ['+', '-', '/', '*']
-
-    for arg in tokens:
-        if is_legal_roll(arg):
-            if op:
-                o = op
-                n = 1
-                op = None
-            elif const:
-                o = '+'
-                n = const
-                const = None
-            else:
-                o = '+'
-                n = 1
-            
-            for _ in range(n):
-                roll = Roll(arg)
-                rolls.append(roll)
-                roll.set_operator(o)
-                for m in modqueue:
-                    roll.add_modifier(m)
-            modqueue = []
-        elif arg in operators:
-            if const:
-                modqueue.append(Modifier(const, arg))
-                const = None
-            else:
-                op = arg
-        elif arg.isnumeric():
-            if roll and op:
-                roll.add_modifier(Modifier(int(arg), op))
-                op = None
-            else:
-                const = int(arg)
-        else:
-            raise ValueError
+    regex = r'(?P<op>[+-/*]?)? *(?P<n>\d+(?= +\d))? *(?P<qty>\d*)d' + \
+        r'(?P<die>\d+) *(?P<advstr>[ad]*)' + \
+        r'(?P<mods>( *(k *\d+|[+-/*] *\d+(?!d)))*)'
     
+    for roll in re.finditer(regex, string):
+        n = roll.group('n')
+        if n in [None, '']:
+            n = 1
+        else:
+            n = int(n)
+
+        qty = roll.group('qty')
+        if qty in [None, '']:
+            qty = 1
+        else:
+            qty = int(qty)
+
+        die = int(roll.group('die'))
+
+        advstr = roll.group('advstr')
+        advscore = advstr.count('a') - advstr.count('d')
+        adv = advscore > 0
+        disadv = advscore < 0
+        if adv and qty == 1:
+            qty = 2
+
+        modstr = roll.group('mods')
+        mods = []
+        keep = -1
+        if not modstr in [None, '']:
+            modstr = modstr.replace(' ', '') + 'k'
+            # Add k to ensure last term is added
+            # won't cause an error in a properly formatted string
+
+            q = ''
+            o = ''
+            for c in modstr:
+                if c in ['k', '+', '-', '*', '/']:
+                    if o == 'k' and q:
+                        if keep > 0:
+                            raise ValueError('Multiple keep values provided.')
+                        keep = int(q)
+                    elif o:
+                        mods.append(Modifier(int(q), o))
+                    o = c
+                    q = ''
+                else:
+                    q += c
+
+        op = roll.group('op')
+        if op in [None, ''] or n > 1:
+            op = get_operator('+')
+        else:
+            op = get_operator(op)
+
+        for _ in range(n):
+            rolls.append(Roll(qty, die, adv, disadv, keep, mods, op))
+
     return rolls
 
 def stats_embed(data, mention):
