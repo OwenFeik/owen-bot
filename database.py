@@ -97,6 +97,16 @@ class Roll_Database(Database):
         )
         return self.cursor.fetchall()
 
+    def reset_rolls(self, user, server=None):
+        if server is not None:
+            sql = 'DELETE FROM rolls WHERE user = ? AND server = ?;',
+            tup = (user.id, server.id)
+        else:
+            sql = 'DELETE FROM rolls WHERE user = ?;'
+            tup = (user)
+        self.execute(sql, tup)
+        self.save()
+
 class XKCD_Database(Database):
     def __init__(self, db_file):
         super().__init__(db_file)

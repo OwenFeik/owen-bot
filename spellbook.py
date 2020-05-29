@@ -39,9 +39,10 @@ class Spellbook():
         return spells
 
     def handle_command(self, string):
-        spell = self.get_spell(string.strip())
+        string = string.strip()
+        spell = self.get_spell(string)
         if spell is None:
-            return 'text', f'Sorry, I couldn\'t find {string}.'
+            return 'text', f'Sorry, I couldn\'t find "{string}".'
         else:
             return 'embed', spell.embed()
 

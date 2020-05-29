@@ -10,18 +10,41 @@ def handle_command(string, **kwargs):
     
     # One of these two must be supplied
     user = kwargs.get('user')
-    mention = kwargs.get('mention', user.display_name)
+    mention = kwargs.get('mention')
+    if mention is None:
+        mention = user.display_name
 
     server = kwargs.get('server')
     db = kwargs.get('database')
 
-    string = string.strip()
-    if string == 'stats':
+    string = string.lower().strip()
+    if 'stats' in string:
+        if db == None:
+            return False, 'Database error; yell at Owen.'
+        if user == None:
+            return False, 'No user provided to command handler; yell at Owen.'
+
         if type(db) == str:
             db = database.Roll_Database(db)
-        
-        return True, stats_embed(db.get_rolls(user, server), mention)
-    
+
+        if string == 'stats':            
+            return True, stats_embed(db.get_rolls(user, server), mention)            
+        elif string == 'reset stats':
+            db.reset_rolls(user)
+            return False, f'Your stored rolls have been deleted.'
+        elif string == 'reset server stats':
+            if server == None:
+                return (
+                    False, 
+                    'No server provided to command handler; yell at Owen.'
+                )
+
+            db.reset_rolls(user, server)
+            return (
+                False, 
+                f'Your stored rolls on {server.name} have been deleted.'
+            )
+
     try:
         rolls = get_rolls(string)
         assert len(rolls) > 0
