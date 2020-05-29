@@ -99,11 +99,11 @@ class Roll_Database(Database):
 
     def reset_rolls(self, user, server=None):
         if server is not None:
-            sql = 'DELETE FROM rolls WHERE user = ? AND server = ?;',
+            sql = 'DELETE FROM rolls WHERE user = ? AND server = ?;'
             tup = (user.id, server.id)
         else:
             sql = 'DELETE FROM rolls WHERE user = ?;'
-            tup = (user)
+            tup = (user.id,)
         self.execute(sql, tup)
         self.save()
 
