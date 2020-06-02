@@ -20,7 +20,7 @@ class CommandHandler():
             user = message.mentions[0]
 
             self.add_vote(user.id, message.author.id)
-            vote_count = self.vote_count(user.id) 
+            vote_count = self.vote_count(user.id)
             if vote_count >= self.required_votes:
                 try:
                     await user.move_to(None, reason=self.kick_message)
@@ -38,7 +38,7 @@ class CommandHandler():
     
     def add_vote(self, target_id, author_id):
         self.votes = [v for v in self.votes if \
-            v[0] != target_id and v[2] != author_id]
+            not (v[0] != target_id and v[2] != author_id)]
         self.votes.append((target_id, time.time(), author_id))
 
     def scrub_votes(self, user_id=None):
