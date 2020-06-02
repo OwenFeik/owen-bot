@@ -13,6 +13,7 @@ import utilities # Send formatted log messages, load configuration file
 import wordart # Create word out of emojis
 import spellbook # Search for dungeons and dragons spells
 import database
+import kick
 
 commands = [
     '--about',
@@ -21,6 +22,7 @@ commands = [
     '--gmroll',
     '--hello',
     '--help',
+    '--kick',
     '--minecraft',
     '--reverse',
     '--roll',
@@ -33,6 +35,15 @@ commands = [
 
 config = utilities.load_config()
 command_help = utilities.load_help()
+
+if config['kick']:
+    kick_handler = kick.CommandHandler(
+        interval=config['kick_interval'], 
+        required_votes=config['kick_votes']
+    )
+else:
+    command.remove('--kick')
+    del command_help['kick']
 
 if config['dnd_spells']:
     spell_handler = spellbook.Spellbook(config['spellbook_url'])
@@ -96,6 +107,8 @@ async def on_message(message):
         else:
             msg = f'I\'m afraid I can\'t help you with {string}.'
         await message.channel.send(msg)
+    elif message.content.startswith('--kick'):
+        await message.channel.send(await kick_handler.handle_command(message))
     elif config['xkcd'] and message.content.startswith('--xkcd'): # If the user wants an xkcd comic
         query = message.content[6:].strip() # Everything except --xkcd
         if query:

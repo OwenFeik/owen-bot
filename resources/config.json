@@ -1,4 +1,7 @@
 {
+    "kick": true,
+    "kick_interval": 600,
+    "kick_votes": 2,
     "xkcd": true,
     "xkcd_interval": 1800,
     "scryfall": true,
