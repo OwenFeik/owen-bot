@@ -38,7 +38,7 @@ class CommandHandler():
     
     def add_vote(self, target_id, author_id):
         self.votes = [v for v in self.votes if \
-            not (v[0] != target_id and v[2] != author_id)]
+            not (v[0] == target_id and v[2] == author_id)]
         self.votes.append((target_id, time.time(), author_id))
 
     def scrub_votes(self, user_id=None):
