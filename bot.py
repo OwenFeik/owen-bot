@@ -37,12 +37,9 @@ config = utilities.load_config()
 command_help = utilities.load_help()
 
 if config['kick']:
-    kick_handler = kick.CommandHandler(
-        interval=config['kick_interval'], 
-        required_votes=config['kick_votes']
-    )
+    kick_handler = kick.CommandHandler(interval=config['kick_interval'])
 else:
-    command.remove('--kick')
+    commands.remove('--kick')
     del command_help['kick']
 
 if config['dnd_spells']:
