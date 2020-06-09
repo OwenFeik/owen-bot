@@ -102,7 +102,7 @@ class JoJo(Command):
     def __init__(self, config):
         super().__init__(config)
         word_string = '|'.join(self.words)
-        self.regex = f'({word_string})'
+        self.regex = f'(?i)({word_string})'
 
     async def handle(self, message):
         return discord.Embed(
