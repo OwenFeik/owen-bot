@@ -39,12 +39,11 @@ class Spellbook():
         return spells
 
     def handle_command(self, string):
-        string = string.strip()
         spell = self.get_spell(string)
         if spell is None:
-            return 'text', f'Sorry, I couldn\'t find "{string}".'
+            return f'Sorry, I couldn\'t find "{string}".'
         else:
-            return 'embed', spell.embed()
+            return spell.embed()
 
 class Spell():
     def __init__(self, **kwargs):

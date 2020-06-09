@@ -1,6 +1,7 @@
 import paramiko # SSH interface
 import socket # socket timeout exception
 import time # limit how often server is rebooted
+import commands
 
 class SSH():
     def __init__(self, **kwargs):
@@ -64,8 +65,13 @@ class Vote():
     def age(self):
         return time.time() - self.vote_time
 
-class CommandHandler():
+class Minecraft(commands.Command):
     def __init__(self, config):
+        assert config['mcserv']
+        super().__init__(config)
+        self.commands = ['--minecraft']
+
+        config = config['mcserv_config']
         self.config = config
         self.reboot_interval = config.get('reboot_interval')
         self.reboot_votes = config.get('reboot_votes')
@@ -73,8 +79,10 @@ class CommandHandler():
         self.previous_reboot = 0
         self.votes = []
 
-    def handle_command(self, command, sender):
-        """Accepts the command sent and the senders username."""
+    def handle(self, message):
+        command = message.replace(self.commands[0], '', 1).strip()
+        sender = str(message.author)
+
         if command == 'reboot':
             sender_votes = [v for v in self.votes if v.user == sender]
             if sender_votes:

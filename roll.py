@@ -4,62 +4,89 @@ import operator
 import heapq
 import discord
 import database
+import commands
+import utilities
 
-def handle_command(string, **kwargs):
-    failstr = kwargs.get('failstr', 'Invalid format')
-    
-    # One of these two must be supplied
-    user = kwargs.get('user')
-    mention = kwargs.get('mention')
-    if mention is None:
-        mention = user.display_name
+class RollCommand(commands.Command):
+    def __init__(self, config):
+        super().__init__(config)
+        self.commands = ['--roll', '--dmroll', '--gmroll']
+        self.delete_message = True
+        self.will_send = True
+        self.dm_role = config['dm_role']
+        self.failstr = 'Invalid format'
+        self.db = database.Roll_Database('resources/bot.db')
 
-    server = kwargs.get('server')
-    db = kwargs.get('database')
+    async def handle(self, message):
+        self.delete_message = True
 
-    string = string.lower().strip()
-    if 'stats' in string:
-        if db == None:
-            return False, 'Database error; yell at Owen.'
-        if user == None:
-            return False, 'No user provided to command handler; yell at Owen.'
+        user = message.author
+        mention = user.mention
+        server = message.guild
+        channel = message.channel
 
-        if type(db) == str:
-            db = database.Roll_Database(db)
+        string = message.content.lower().strip()
+        for c in self.commands:
+            if string.startswith(c):
+                command = c
+                break
+        string = string.replace(command, '', 1)
 
-        if string == 'stats':            
-            return True, stats_embed(db.get_rolls(user, server), mention)            
-        elif string == 'reset stats':
-            db.reset_rolls(user)
-            return False, f'Your stored rolls have been deleted.'
-        elif string == 'reset server stats':
-            if server == None:
-                return (
-                    False, 
-                    'No server provided to command handler; yell at Owen.'
+        if 'stats' in string:
+            if string == 'stats':            
+                e = stats_embed(self.db.get_rolls(user, server), mention)         
+                await channel.send(embed=e)
+            elif string == 'reset stats':
+                self.delete_message = False
+                self.db.reset_rolls(user)
+                await channel.send(f'Your stored rolls have been deleted.')
+            elif string == 'reset server stats':
+                self.delete_message = False
+                if server == None:
+                    await channel.send('I don\'t track stats in DMs sorry.')
+                self.db.reset_rolls(user, server)
+                await channel.send(
+                    f'Your stored rolls on {server.name} have been deleted.'
                 )
+            else:
+                self.delete_message = False
+                await channel.send(
+                    'I didn\'t understand that. Try "--help roll".'
+                )
+            return
 
-            db.reset_rolls(user, server)
-            return (
-                False, 
-                f'Your stored rolls on {server.name} have been deleted.'
+        try:
+            rolls = get_rolls(string)
+            assert len(rolls) > 0
+        except Exception as e:
+            self.delete_message = False
+            await channel.send(f'{self.failstr}: {e}')
+            return
+
+        if server and user:
+            for roll in rolls:
+                self.db.insert_roll(roll, user, server)
+
+        e = build_embed(rolls, mention, string)
+        if command == '--roll':
+            await channel.send(embed=e)
+        elif command in ['--dmroll', '--gmroll']:
+            for member in message.guild.members:
+                for role in member.roles:
+                    if role.name == self.dm_role:
+                        try:
+                            await member.send(embed=e)
+                            if user != member:
+                                await user.send(embed=e)
+                        except discord.errors.HTTPException as e:
+                            self.delete_message = False
+                            await channel.send('Ran into an error.')
+                            utilities.log_message(f'Error sending roll: {e}')
+                        return
+            self.delete_message = False
+            await channel.send(
+                f'Couldn\'t find a member with the role "{self.dm_role}".'
             )
-
-    try:
-        rolls = get_rolls(string)
-        assert len(rolls) > 0
-    except Exception as e:
-        return False, f'{failstr}: {e}'
-
-    if server and user:
-        if type(db) == str:
-            db = database.Roll_Database(db)
-        
-        for roll in rolls:
-            db.insert_roll(roll, user, server)
-
-    # True; succeeded, supplying an embed
-    return True, build_embed(rolls, mention, string)
 
 def build_embed(rolls, mention, string):
     if len(rolls) == 1:

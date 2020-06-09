@@ -1,12 +1,15 @@
 import time
 import discord
+import commands
 
-class CommandHandler():
-    def __init__(self, interval=300):
-        self.interval = interval
-        self.votes = [] # [(id, time, sender), (id, time, sender)]
+class Kick(commands.Command):
+    def __init__(self, config):
+        super().__init__(config)
+        self.commands = ['--kick']
+        self.interval = config['kick_interval']
+        self.votes = []
 
-    async def handle_command(self, message):
+    async def handle(self, message):
         self.scrub_votes()
         if not message.mentions:
             return 'Usage: "--kick <mention>" e.g. "--kick @BadPerson".'
