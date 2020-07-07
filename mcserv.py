@@ -80,7 +80,7 @@ class Minecraft(commands.Command):
         self.votes = []
 
     def handle(self, message):
-        command = message.replace(self.commands[0], '', 1).strip()
+        command = message.content[len(self.commands[0]):].strip()
         sender = str(message.author)
 
         if command == 'reboot':

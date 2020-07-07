@@ -22,7 +22,7 @@ class Command():
         return 'Not implemented.'
 
     async def handle(self, message):
-        argument = message.content.replace(self.commands[0], '', 1).strip()
+        argument = message.content[len(self.commands[0]):].strip()
         return await self._handle(argument)
 
 class About(Command):
@@ -171,7 +171,7 @@ class VaporWave(Command):
     async def handle(self, message):
         self.delete_message = False
 
-        argument = message.content.replace(self.commands[0], '', 1).strip()
+        argument = message.content[len(self.commands[0]):].strip()
         if not argument:
             return f'Usage: "--vw <message>" to create ' + \
                 wordart.vaporwave('vaporwave') + ' text.'
