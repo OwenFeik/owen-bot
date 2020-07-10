@@ -10,7 +10,7 @@ def translate(string, replacement):
 
     letters = []
 
-    for c in string:
+    for c in string.lower():
         if not c in alphabet:
             return f'Sorry, character {c} not available, only letters can be used.'
         letters.append(alphabet[c])
