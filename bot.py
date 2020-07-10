@@ -79,7 +79,7 @@ class Bot():
                 await message.channel.send('\n'.join(self.commands))
                 return
 
-            match = re.search(self.regex, message.content)
+            match = re.search(self.regex, message.content.lower())
             if match is None:
                 await message.channel.send(
                     'I don\'t recognise that command. Try "--all" or "--help".'

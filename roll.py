@@ -15,13 +15,13 @@ class RollCommand(commands.Command):
         self.will_send = True
         self.dm_role = config['dm_role']
         self.failstr = 'Invalid format'
-        self.db = database.Roll_Database('resources/bot.db')
+        self.db = database.Roll_Database(config['db_file'])
 
     async def handle(self, message):
         self.delete_message = True
 
         user = message.author
-        mention = user.mention
+        mention = user.display_name
         server = message.guild
         channel = message.channel
 
@@ -30,7 +30,7 @@ class RollCommand(commands.Command):
             if string.startswith(c):
                 command = c
                 break
-        string = string.replace(command, '', 1)
+        string = string.replace(command, '', 1).strip()
 
         if 'stats' in string:
             if string == 'stats':            

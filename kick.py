@@ -24,12 +24,12 @@ class Kick(commands.Command):
         if target.voice is None:
             return f'{target.display_name} isn\'t in a voice channel.'
         if message.author.voice is None:
-            return 'You can\'t kick people you aren\'t' + \
+            return 'You can\'t kick people you aren\'t ' + \
                 'in a voice channel with!'
 
         channel = target.voice.channel
         if channel is None or channel != message.author.voice.channel:
-            return 'You can\'t kick people you aren\'t' + \
+            return 'You can\'t kick people you aren\'t ' + \
                 'in a voice channel with!'
 
         voice_members = len(channel.members)
