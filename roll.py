@@ -93,7 +93,7 @@ class RollCommand(commands.Command):
             assert len(rolls) > 0
         except Exception as e:
             self.delete_message = False
-            await channel.send(f'{self.failstr}: {e}')
+            await channel.send(f'{self.failstr}. {e}')
             return
 
         if server and user:
@@ -292,7 +292,7 @@ def clean_number(num):
 
 def get_rolls(string):
     rolls = []
-    regex = r'(?P<op>[+-/*]?)? *(?P<n>\d+(?= +\d))? *(?P<qty>\d*)d' + \
+    regex = r'(?P<op>[+-/*]?)? *(?P<n>\d+(?= +))? *(?P<qty>\d*)d' + \
         r'(?P<die>\d+) *(?P<advstr>[ad]*)' + \
         r'(?P<mods>( *(k *\d+|[+-/*] *\d+(?!d)))*)'
     
