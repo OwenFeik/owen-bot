@@ -10,7 +10,7 @@ import utilities
 class RollCommand(commands.Command):
     def __init__(self, config):
         super().__init__(config)
-        self.commands = ['--roll', '--dmroll', '--gmroll']
+        self.commands = ['--roll', '--dmroll', '--gmroll', '--setdm']
         self.delete_message = True
         self.will_send = True
         self.dm_role = config['dm_role']
@@ -31,6 +31,39 @@ class RollCommand(commands.Command):
                 command = c
                 break
         string = string.replace(command, '', 1).strip()
+
+        if command == '--setdm':
+            self.delete_message = False
+            self.will_send = False
+            
+            role = discord.utils.find(
+                lambda r: r.name == self.dm_role, 
+                message.guild.roles
+            )
+
+            if not role in message.author.roles:
+                return 'Only the current DM can set a new one.'
+            if not message.mentions:
+                return 'Usage: "--setdm <mention>".'
+            if len(message.mentions) > 1:
+                return 'I can only set one person as the DM!'
+
+            try:
+                new_dm = message.mentions[0]
+                if role in new_dm.roles:
+                    return f'{new_dm.display_name} is already the DM!'
+                
+                old_dm = await self.get_dm(message.guild.members)
+                while old_dm:
+                    await old_dm.remove_roles(role)
+                    old_dm = await self.get_dm(message.guild.members)
+
+                await new_dm.add_roles(role)
+
+                return f'{new_dm.display_name} is now the DM!' + \
+                    ' "--dmroll" will work properly.'
+            except discord.errors.Forbidden:
+                return 'Unfortunately, I don\'t have permission to do that.'
 
         if 'stats' in string:
             if string == 'stats':            
@@ -71,22 +104,29 @@ class RollCommand(commands.Command):
         if command == '--roll':
             await channel.send(embed=e)
         elif command in ['--dmroll', '--gmroll']:
-            for member in message.guild.members:
-                for role in member.roles:
-                    if role.name == self.dm_role:
-                        try:
-                            await member.send(embed=e)
-                            if user != member:
-                                await user.send(embed=e)
-                        except discord.errors.HTTPException as e:
-                            self.delete_message = False
-                            await channel.send('Ran into an error.')
-                            utilities.log_message(f'Error sending roll: {e}')
-                        return
-            self.delete_message = False
-            await channel.send(
-                f'Couldn\'t find a member with the role "{self.dm_role}".'
-            )
+            dm = await self.get_dm(message.guild.members)
+            if dm is None:
+                self.delete_message = False
+                await channel.send(
+                    f'Couldn\'t find a member with the role "{self.dm_role}".'
+                )
+
+            try:
+                await dm.send(embed=e)
+                if user != dm:
+                    await user.send(embed=e)
+            except discord.errors.HTTPException as e:
+                self.delete_message = False
+                await channel.send('Ran into an error.')
+                utilities.log_message(f'Error sending roll: {e}')
+                return
+
+    async def get_dm(self, members):
+        for member in members:
+            for role in member.roles:
+                if role.name == self.dm_role:
+                    return member
+        return None
 
 def build_embed(rolls, mention, string):
     if len(rolls) == 1:
