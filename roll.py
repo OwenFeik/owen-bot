@@ -19,6 +19,7 @@ class RollCommand(commands.Command):
 
     async def handle(self, message):
         self.delete_message = True
+        self.will_send = True
 
         user = message.author
         mention = user.display_name
