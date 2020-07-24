@@ -107,6 +107,35 @@ class Roll_Database(Database):
         self.execute(sql, tup)
         self.save()
 
+class Campaign_Database(Database):
+    def __init__(self, db_file):
+        super().__init__(db_file)
+        self.execute(
+            'CREATE TABLE IF NOT EXISTS campaigns(\
+            name TEXT, server INTEGER, dm INTEGER, players TEXT, \
+            FOREIGN KEY(dm) REFERENCES users(id), \
+            FOREIGN KEY(server) REFERENCES servers(id), \
+            PRIMARY KEY(name, server));'
+        )
+
+    def add_campaign(self, campaign):
+        data_tuple = (
+            campaign.name, 
+            campaign.server, 
+            campaign.dm, 
+            ','.join(str(p) for p in campaign.players)
+        )
+
+        self.execute('INSERT INTO campaigns VALUES(?, ?, ?, ?);', data_tuple)
+
+    def get_campaign(self, name, server):
+        self.execute(
+            'SELECT dm, players FROM campaigns \
+            WHERE name = ? AND server = ?;',
+            (name, server)
+        )
+        return self.cursor.fetchone()
+
 class XKCD_Database(Database):
     def __init__(self, db_file):
         super().__init__(db_file)
