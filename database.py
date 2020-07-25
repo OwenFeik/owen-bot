@@ -112,27 +112,41 @@ class Campaign_Database(Database):
         super().__init__(db_file)
         self.execute(
             'CREATE TABLE IF NOT EXISTS campaigns(\
-            name TEXT, server INTEGER, dm INTEGER, players TEXT, \
+            name TEXT COLLATE NOCASE, server INTEGER, \
+            dm INTEGER, players TEXT, nicks TEXT, active INTEGER \
             FOREIGN KEY(dm) REFERENCES users(id), \
             FOREIGN KEY(server) REFERENCES servers(id), \
             PRIMARY KEY(name, server));'
         )
 
-    def add_campaign(self, campaign):
+    def add_campaign(self, campaign, active=True):
         data_tuple = (
             campaign.name, 
             campaign.server, 
-            campaign.dm, 
-            ','.join(str(p) for p in campaign.players)
+            campaign.dm,
+            ','.join(str(p) for p in campaign.players),
+            ','.join(n for n in campaign.nicks),
+            int(active)
         )
 
-        self.execute('INSERT INTO campaigns VALUES(?, ?, ?, ?);', data_tuple)
+        self.execute(
+            'INSERT INTO campaigns VALUES(?, ?, ?, ?, ?);', 
+            data_tuple
+        )
 
     def get_campaign(self, name, server):
         self.execute(
-            'SELECT dm, players FROM campaigns \
+            'SELECT dm, players, nicks FROM campaigns \
             WHERE name = ? AND server = ?;',
             (name, server)
+        )
+        return self.cursor.fetchone()
+
+    def get_active_campaign(self, server):
+        self.execute(
+            'SELECT name, dm, players, nicks FROM campaigns \
+            WHERE server = ? AND active = 1;',
+            (server)
         )
         return self.cursor.fetchone()
 
