@@ -12,78 +12,146 @@ class CampaignSwitcher(commands.Command):
         self.db = database.Campaign_Database(config['db_file'])
 
     async def handle(self, message):
-        campaign = await self.get_campaign(message.guild)
-
+        server = message.guild.id
+        campaign = self.get_active_campaign(server)
         text = message.content[len(self.commands[0]):].strip()
         command = text.split(' ')[0].lower()
         arg = text[len(command):].strip()
 
-        if not arg.isalnum():
-            return 'Only alphanumeric characters can be used in names. ' + \
-                f'{arg} is inadmissable.'
-
         if command == '':
-            if self.campaign is not None:
-                return f'The current campaign is {self.campaign.name}.'
+            if campaign is not None:
+                return f'The current campaign is {campaign.name}. \
+                    See "--help dnd" for available operations.'
             else:
                 return 'Start a campaign with "--dnd new <name>".'            
-        elif command == 'new':
-            self.campaign = Campaign(arg, message.guild)
+
+        options = [
+            'add',
+            'all',
+            'campaign',
+            'join', 
+            'leave', 
+            'new', 
+            'nick', 
+            'setdm',
+            'setnick'
+        ]
+        if not (command in options):
+            return 'That command doesn\'t exist. ' + \
+                'Try "--dnd all" to see a list of options.'
+
+        if command == 'all':
+            return '--dnd ' + '\n--dnd '.join(options)
+
+        name_check = lambda n: n.replace(' ', '').isalnum() 
+
+        if command == 'new':
+            if not name_check(arg):
+                return 'Only alphanumeric characters can be used in ' + \
+                    f'campaign names. "{arg}" is inadmissable.'
+
+            if campaign:
+                self.db.add_campaign(campaign)
+
+            if not self.db.get_campaign(arg, server):
+                self.campaigns[server] = Campaign(arg, server)
+                self.db.add_campaign(self.campaigns[server])
+                return f'Created new campaign {arg} and set it as active.'
+            else:
+                return f'The campaign {arg} already exists!'
         
-        if self.campaign is None:
-            return f'No active campaign, \
-                start one with "--dnd new <name>" to use {command}.'
+        if campaign is None:
+            return f'No active campaign, ' + \
+                f'start one with "--dnd new <name>" to use {command}.'
         
         if command == 'nick':
-            self.campaign.set_nick(message.author.id, arg)
+            if not name_check(arg):
+                return 'Only alphanumeric characters can be used in ' + \
+                    f'nicknames. "{arg}" is inadmissable.'
+
+            campaign.set_nick(message.author.id, arg)
             await message.author.edit(nick=arg)
             return f'Set the nickname for {message.author.display_name} ' + \
-                f'in {self.campaign.name} to {arg}.'
+                f'in {campaign.name} to {arg}.'
         elif command == 'join':
-            self.campaign.add_player(message.author.id)
+            campaign.add_player(message.author.id)
             return f'Added {message.author.display_name} to ' + \
-                f'{self.campaign.name}. Welcome to the party!'
+                f'{campaign.name}. Welcome to the party!'
         elif command == 'leave':
-            self.campaign.remove_player(message.author.id)
+            campaign.remove_player(message.author.id)
             return f'Removed {message.author.display_name} from ' + \
-                f'{self.campaign.name}.'
-        elif command == 'setdm':
-            if self.campaign.dm is not None and \
-                message.author.id != self.campaign.dm:
-                
-                return 'Only the current DM can set a new DM.'
-            
-            if not message.mentions or len(message.mentions) > 1:
-                return 'Usage: "--setdm <mention>".'
-            
-            self.campaign.dm = message.mentions[0].id
-            return f'Set {message.mentions[0].display_name} as the DM for ' + \
-                f'{self.campaign.name}.'
+                f'{campaign.name}.'
+        elif command == 'campaign':
+            if not name_check(arg):
+                return 'Only aplhanumeric characters can be used in ' + \
+                    f'campaign names. "{arg}" cannot be a campaign.'
 
-    async def get_campaign(self, server):
-        if server.id in self.campaigns:
-            return self.campaigns[server.id]
-        
-        campaign = self.db.get_active_campaign(server.id)
-        if campaign is not None:
-            name, dm, players, nicks = campaign
-            campaign = Campaign(
-                name, 
-                server.id, 
-                dm, 
-                [int(p) for p in players.split(',')],
-                [n for n in nicks.split(',')]
+            if campaign.name.lower() == arg.lower():
+                return f'{campaign.name} is already the active campaign.'
+
+            new = Campaign.from_db_tup(
+                self.db.get_campaign(arg, server),
+                server
             )
-            self.campaigns[server.id] = campaign
+
+            if new is None:
+                return f'No campaign named {arg} exists.'
+
+            self.db.add_campaign(self.campaigns[server])
+            self.campaigns[server] = new
+            self.db.set_active(new)
+            await self.apply_campaign(server)
+            return f'The active campaign is now {new.name}.'
+
+        dm_check = lambda: (campaign.dm is not None and \
+            message.author.id != campaign.dm)
+        
+        if not dm_check():
+            return f'Only the DM can use the command {command}.'
+
+        if not message.mentions or len(message.mentions) > 1:
+            return 'This command requires a single mention. e.g. \
+                "--dnd <command> <mention>".'
+            
+        if command == 'setdm':    
+            campaign.dm = message.mentions[0].id
+            await self.set_dm(message.guild)
+            return f'Set {message.mentions[0].display_name} as the DM for ' + \
+                f'{campaign.name}.'
+        elif command == 'add':
+            campaign.add_player(message.mentions[0].id)
+            return f'Added {message.mentions[0].display_name} to ' + \
+                f'{campaign.name}.'
+        elif command == 'setnick':
+            campaign.set_nick(message.mentions[0], arg)
+            await self.update_nicknames(message.guild)
+
+
+    def get_active_campaign(self, server):
+        if server in self.campaigns:
+            return self.campaigns[server]
+        
+        campaign = self.db.get_active_campaign(server)
+        if campaign is not None:
+            self.campaigns[server] = \
+                Campaign.from_db_tup(campaign, server)
 
         return campaign        
 
     async def update_nicknames(self, server):
-        for p, n in zip(self.campaign.players, self.campaign.nicks):
+        # server: the Guild object of the relevant server
+
+        campaign = self.get_active_campaign(server.id)
+        for p, n in zip(campaign.players, campaign.nicks):
+            if n == '':
+                continue
+
             member = await server.get_member(p)
             await member.edit(nick=n)
 
-    async def set_dm(self, server, user):
+    async def set_dm(self, server):
+        # server: the Guild object of the relevant server
+
         dm_role = discord.utils.find(
             lambda r: r.name == self.dm_role, 
             server.roles
@@ -93,12 +161,17 @@ class CampaignSwitcher(commands.Command):
             if dm_role in member.roles:
                 await member.remove_roles(dm_role)
 
-        await user.add_roles(dm_role)
-
+        campaign = self.get_active_campaign(server.id)
+        await server.get_member(campaign.dm).add_roles(dm_role)
 
     async def apply_campaign(self, server):
-        await self.set_dm(server, server.get_member(self.campaign.dm))
+        # server: the Guild object of the relevant server
+        await self.set_dm(server)
         await self.update_nicknames(server)
+
+    def save_campaigns(self):
+        for campaign in self.campaigns.values():
+            self.db.add_campaign(campaign)
 
 class Campaign():
     def __init__(self, name, server, dm=None, players=None, nicks=None):
@@ -113,7 +186,7 @@ class Campaign():
         # [str]: nicks of the players for campaign
         self.nicks = nicks if nicks is not None else []
 
-    def add_player(self, player, nick=None):
+    def add_player(self, player, nick=''):
         self.players.append(player)
         self.nicks.append(nick)
 
@@ -124,3 +197,15 @@ class Campaign():
 
     def set_nick(self, player, nick):
         self.nicks[self.players.index(player)] = nick
+
+    @staticmethod
+    def from_db_tup(tup, server):
+        name, dm, players, nicks = tup
+
+        return Campaign(
+            name, 
+            server, 
+            dm, 
+            [int(p) for p in players.split(',')] if players else [],
+            [n for n in nicks.split(',')] if nicks else []
+        )

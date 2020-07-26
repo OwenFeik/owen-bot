@@ -113,26 +113,42 @@ class Campaign_Database(Database):
         self.execute(
             'CREATE TABLE IF NOT EXISTS campaigns(\
             name TEXT COLLATE NOCASE, server INTEGER, \
-            dm INTEGER, players TEXT, nicks TEXT, active INTEGER \
+            dm INTEGER, players TEXT, nicks TEXT, active INTEGER, \
             FOREIGN KEY(dm) REFERENCES users(id), \
             FOREIGN KEY(server) REFERENCES servers(id), \
             PRIMARY KEY(name, server));'
         )
 
-    def add_campaign(self, campaign, active=True):
-        data_tuple = (
-            campaign.name, 
-            campaign.server, 
-            campaign.dm,
-            ','.join(str(p) for p in campaign.players),
-            ','.join(n for n in campaign.nicks),
-            int(active)
-        )
-
+    def set_active(self, campaign):
         self.execute(
-            'INSERT INTO campaigns VALUES(?, ?, ?, ?, ?);', 
-            data_tuple
+            'UPDATE campaigns SET active = CASE \
+                WHEN name = ? AND server = ? THEN 1 \
+                WHEN name != ? AND server = ? THEN 0 \
+                WHEN server != ? THEN active \
+            END',
+            (
+                campaign.name,
+                campaign.server,
+                campaign.name,
+                campaign.server,
+                campaign.server
+            )
         )
+        self.save()
+
+    def add_campaign(self, campaign, active=True):
+        self.execute(
+            'REPLACE INTO campaigns VALUES(?, ?, ?, ?, ?, ?);', 
+            (
+                campaign.name, 
+                campaign.server, 
+                campaign.dm,
+                ','.join(str(p) for p in campaign.players),
+                ','.join(n for n in campaign.nicks),
+                int(active)
+            )
+        )
+        self.save()
 
     def get_campaign(self, name, server):
         self.execute(
@@ -146,7 +162,7 @@ class Campaign_Database(Database):
         self.execute(
             'SELECT name, dm, players, nicks FROM campaigns \
             WHERE server = ? AND active = 1;',
-            (server)
+            (server,)
         )
         return self.cursor.fetchone()
 

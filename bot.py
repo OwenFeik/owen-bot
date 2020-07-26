@@ -4,6 +4,7 @@ import re
 
 import discord
 
+import campaign
 import commands
 import database
 import kick
@@ -14,6 +15,7 @@ import utilities
 class Bot():
     instructions = [
         commands.About,
+        campaign.CampaignSwitcher,
         commands.Hello,
         commands.Help,
         kick.Kick,
@@ -94,15 +96,15 @@ class Bot():
             if cmd is None:
                 return
 
-        try:
-            resp = await cmd.handle(message)
-        except Exception as e:
-            utilities.log_message('Ran into issue handling command ' + \
-                f'{message.content}: {e}')
-            await message.channel.send(
-                'Ran into an issue with that command.'
-            )
-            return
+        # try:
+        resp = await cmd.handle(message)
+        # except Exception as e:
+        #     utilities.log_message('Ran into issue handling command ' + \
+        #         f'{message.content}: {e}')
+        #     await message.channel.send(
+        #         'Ran into an issue with that command.'
+        #     )
+        #     return
 
         if not cmd.will_send:
             if type(resp) == str:
