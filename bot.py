@@ -4,6 +4,7 @@ import re
 
 import discord
 
+import campaign
 import commands
 import database
 import kick
@@ -14,6 +15,7 @@ import utilities
 class Bot():
     instructions = [
         commands.About,
+        campaign.CampaignSwitcher,
         commands.Hello,
         commands.Help,
         kick.Kick,

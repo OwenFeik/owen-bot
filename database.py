@@ -107,6 +107,65 @@ class Roll_Database(Database):
         self.execute(sql, tup)
         self.save()
 
+class Campaign_Database(Database):
+    def __init__(self, db_file):
+        super().__init__(db_file)
+        self.execute(
+            'CREATE TABLE IF NOT EXISTS campaigns(\
+            name TEXT COLLATE NOCASE, server INTEGER, \
+            dm INTEGER, players TEXT, nicks TEXT, active INTEGER, \
+            FOREIGN KEY(dm) REFERENCES users(id), \
+            FOREIGN KEY(server) REFERENCES servers(id), \
+            PRIMARY KEY(name, server));'
+        )
+
+    def set_active(self, campaign):
+        self.execute(
+            'UPDATE campaigns SET active = CASE \
+                WHEN name = ? AND server = ? THEN 1 \
+                WHEN name != ? AND server = ? THEN 0 \
+                WHEN server != ? THEN active \
+            END',
+            (
+                campaign.name,
+                campaign.server,
+                campaign.name,
+                campaign.server,
+                campaign.server
+            )
+        )
+        self.save()
+
+    def add_campaign(self, campaign, active=True):
+        self.execute(
+            'REPLACE INTO campaigns VALUES(?, ?, ?, ?, ?, ?);', 
+            (
+                campaign.name, 
+                campaign.server, 
+                campaign.dm,
+                ','.join(str(p) for p in campaign.players),
+                ','.join(f'"{n}"' for n in campaign.nicks),
+                int(active)
+            )
+        )
+        self.save()
+
+    def get_campaign(self, name, server):
+        self.execute(
+            'SELECT name, dm, players, nicks FROM campaigns \
+            WHERE name = ? AND server = ?;',
+            (name, server)
+        )
+        return self.cursor.fetchone()
+
+    def get_active_campaign(self, server):
+        self.execute(
+            'SELECT name, dm, players, nicks FROM campaigns \
+            WHERE server = ? AND active = 1;',
+            (server,)
+        )
+        return self.cursor.fetchone()
+
 class XKCD_Database(Database):
     def __init__(self, db_file):
         super().__init__(db_file)
