@@ -33,39 +33,6 @@ class RollCommand(commands.Command):
                 break
         string = string.replace(command, '', 1).strip()
 
-        if command == '--setdm':
-            self.delete_message = False
-            self.will_send = False
-            
-            role = discord.utils.find(
-                lambda r: r.name == self.dm_role, 
-                message.guild.roles
-            )
-
-            if not role in message.author.roles:
-                return 'Only the current DM can set a new one.'
-            if not message.mentions:
-                return 'Usage: "--setdm <mention>".'
-            if len(message.mentions) > 1:
-                return 'I can only set one person as the DM!'
-
-            try:
-                new_dm = message.mentions[0]
-                if role in new_dm.roles:
-                    return f'{new_dm.display_name} is already the DM!'
-                
-                old_dm = await self.get_dm(message.guild.members)
-                while old_dm:
-                    await old_dm.remove_roles(role)
-                    old_dm = await self.get_dm(message.guild.members)
-
-                await new_dm.add_roles(role)
-
-                return f'{new_dm.display_name} is now the DM!' + \
-                    ' "--dmroll" will work properly.'
-            except discord.errors.Forbidden:
-                return 'Unfortunately, I don\'t have permission to do that.'
-
         if 'stats' in string:
             if string == 'stats':            
                 e = stats_embed(self.db.get_rolls(user, server), mention)         

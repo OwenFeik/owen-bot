@@ -20,3 +20,10 @@ def load_help():
     except FileNotFoundError:
         log_message('No help file found.')
         return {}
+
+def scrub_message_of_mentions(message):
+    text = message.content
+    for uid in message.raw_mentions:
+        text = text.replace(f'<@{uid}>', '')
+    return text
+    

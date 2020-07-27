@@ -144,7 +144,7 @@ class Campaign_Database(Database):
                 campaign.server, 
                 campaign.dm,
                 ','.join(str(p) for p in campaign.players),
-                ','.join(n for n in campaign.nicks),
+                ','.join(f'"{n}"' for n in campaign.nicks),
                 int(active)
             )
         )
@@ -152,7 +152,7 @@ class Campaign_Database(Database):
 
     def get_campaign(self, name, server):
         self.execute(
-            'SELECT dm, players, nicks FROM campaigns \
+            'SELECT name, dm, players, nicks FROM campaigns \
             WHERE name = ? AND server = ?;',
             (name, server)
         )
