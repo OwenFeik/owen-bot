@@ -204,6 +204,7 @@ class CampaignSwitcher(commands.Command):
 
     async def update_nicknames(self, server):
         # server: the Guild object of the relevant server
+        missing_players = []
 
         campaign = self.get_active_campaign(server.id)
         for p, n in zip(campaign.players, campaign.nicks):
@@ -211,8 +212,16 @@ class CampaignSwitcher(commands.Command):
                 continue
 
             member = server.get_member(p)
+            if not member:
+                missing_players.append(p)
+                continue
+
             if member.nick != n:
                 await member.edit(nick=n)
+
+        # remove players who have left the server
+        for p in missing_players:
+            campaign.remove_player(p)
 
     async def set_dm(self, server):
         # server: the Guild object of the relevant server
@@ -230,7 +239,10 @@ class CampaignSwitcher(commands.Command):
         if not campaign.dm:
             return
 
-        await server.get_member(campaign.dm).add_roles(dm_role)
+        try:
+            await server.get_member(campaign.dm).add_roles(dm_role)
+        except AttributeError: # dm has left the server
+            campaign.dm = None
 
     async def apply_campaign(self, server):
         # server: the Guild object of the relevant server

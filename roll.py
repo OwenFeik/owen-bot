@@ -283,7 +283,7 @@ def get_rolls(string):
         advscore = advstr.count('a') - advstr.count('d')
         adv = advscore > 0
         disadv = advscore < 0
-        if adv and qty == 1:
+        if (adv or disadv) and qty == 1:
             qty = 2
 
         modstr = roll.group('mods')
