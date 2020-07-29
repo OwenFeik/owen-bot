@@ -150,6 +150,13 @@ class Campaign_Database(Database):
         )
         self.save()
 
+    def delete_campaign(self, campaign):
+        self.execute(
+            'DELETE FROM campaigns WHERE name = ? AND server = ?;',
+            (campaign.name, campaign.server)
+        )
+        self.save()
+
     def get_campaign(self, name, server):
         self.execute(
             'SELECT name, dm, players, nicks FROM campaigns \
@@ -165,6 +172,13 @@ class Campaign_Database(Database):
             (server,)
         )
         return self.cursor.fetchone()
+
+    def get_campaign_names(self, server):
+        self.execute(
+            'SELECT name FROM campaigns WHERE server = ?;',
+            (server,)
+        )
+        return self.cursor.fetchall()
 
 class XKCD_Database(Database):
     def __init__(self, db_file):

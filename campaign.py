@@ -24,7 +24,7 @@ class CampaignSwitcher(commands.Command):
         if command == '':
             if campaign is not None:
                 return f'The current campaign is {campaign.name}. ' + \
-                    '--See "--help dnd" for available operations.'
+                    'See "--dnd help" or "--dnd all" for available operations.'
             else:
                 return 'Start a campaign with "--dnd new <name>".'            
 
@@ -36,6 +36,7 @@ class CampaignSwitcher(commands.Command):
             'help',
             'join', 
             'leave',
+            'list',
             'members', 
             'new', 
             'nick',
@@ -68,6 +69,12 @@ class CampaignSwitcher(commands.Command):
                 return f'The campaign {arg} already exists!'
         elif command == 'help':
             return self.help_message
+        elif command == 'list':
+            campaigns = self.db.get_campaign_names(server)
+            if campaigns == []:
+                return 'There are no campaigns on this server.'
+            else:
+                return 'Campaigns on this server:\n\t' + '\n\t'.join(campaigns)
 
         if campaign is None:
             return f'No active campaign, ' + \
@@ -189,6 +196,10 @@ class CampaignSwitcher(commands.Command):
             self.db.add_campaign(campaign)
             await self.update_nicknames(message.guild)
             return f'Updated the nickname of {target.display_name}.'
+        elif command == 'delete':
+            self.db.delete_campaign(campaign)
+            del self.campaigns[server]
+            return f'Deleted the campaign {campaign.name}.'
 
 
     def get_active_campaign(self, server):
