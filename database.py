@@ -1,5 +1,6 @@
-import sqlite3
+import datetime
 import random
+import sqlite3
 import utilities
 
 class Database:
@@ -114,6 +115,7 @@ class Campaign_Database(Database):
             'CREATE TABLE IF NOT EXISTS campaigns(\
             name TEXT COLLATE NOCASE, server INTEGER, \
             dm INTEGER, players TEXT, nicks TEXT, active INTEGER, \
+            day INTEGER, time INTEGER, notify INTEGER, channel INTEGER, \
             FOREIGN KEY(dm) REFERENCES users(id), \
             FOREIGN KEY(server) REFERENCES servers(id), \
             PRIMARY KEY(name, server));'
@@ -138,14 +140,18 @@ class Campaign_Database(Database):
 
     def add_campaign(self, campaign, active=True):
         self.execute(
-            'REPLACE INTO campaigns VALUES(?, ?, ?, ?, ?, ?);', 
+            'REPLACE INTO campaigns VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?);', 
             (
                 campaign.name, 
                 campaign.server, 
                 campaign.dm,
                 ','.join(str(p) for p in campaign.players),
                 ','.join(f'"{n}"' for n in campaign.nicks),
-                int(active)
+                int(active),
+                campaign.day,
+                campaign.time,
+                1 if campaign.notify else 0,
+                campaign.channel
             )
         )
         self.save()
@@ -159,16 +165,16 @@ class Campaign_Database(Database):
 
     def get_campaign(self, name, server):
         self.execute(
-            'SELECT name, dm, players, nicks FROM campaigns \
-            WHERE name = ? AND server = ?;',
+            'SELECT name, dm, players, nicks, day, time, notify, channel \
+            FROM campaigns WHERE name = ? AND server = ?;',
             (name, server)
         )
         return self.cursor.fetchone()
 
     def get_active_campaign(self, server):
         self.execute(
-            'SELECT name, dm, players, nicks FROM campaigns \
-            WHERE server = ? AND active = 1;',
+            'SELECT name, dm, players, nicks, day, time, notify, channel \
+            FROM campaigns WHERE server = ? AND active = 1;',
             (server,)
         )
         return self.cursor.fetchone()
@@ -177,6 +183,21 @@ class Campaign_Database(Database):
         self.execute(
             'SELECT name FROM campaigns WHERE server = ?;',
             (server,)
+        )
+        return self.cursor.fetchall()
+
+    def get_reminders(self, period, delta):
+        now = datetime.datetime.now()
+        notif_time = now.hour * 3600 + now.minute * 60 + now.second + delta 
+        self.execute(
+            'SELECT name, channel, players FROM campaigns \
+            WHERE notify = 1 AND day = ? AND time - ? < ? AND time - ? > 0;',
+            (
+                now.weekday(),
+                notif_time,
+                period,
+                notif_time
+            )
         )
         return self.cursor.fetchall()
 

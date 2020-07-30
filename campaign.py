@@ -1,3 +1,6 @@
+import asyncio
+import time
+
 import discord
 
 import commands
@@ -13,6 +16,7 @@ class CampaignSwitcher(commands.Command):
         self.campaigns = {}
         self.db = database.Campaign_Database(config['db_file'])
         self.help_message = utilities.load_help()['dnd']
+        config['client'].loop.create_task(self.notify(config['client']))
 
     async def handle(self, message):
         server = message.guild.id
@@ -32,6 +36,7 @@ class CampaignSwitcher(commands.Command):
             'add',
             'all',
             'campaign',
+            'day',
             'delete',
             'help',
             'join', 
@@ -40,9 +45,11 @@ class CampaignSwitcher(commands.Command):
             'members', 
             'new', 
             'nick',
+            'notify',
             'remove', 
             'setdm',
-            'setnick'
+            'setnick',
+            'time'
         ]
         if not (command in options):
             return 'That command doesn\'t exist. ' + \
@@ -70,7 +77,7 @@ class CampaignSwitcher(commands.Command):
         elif command == 'help':
             return self.help_message
         elif command == 'list':
-            campaigns = self.db.get_campaign_names(server)
+            campaigns = [t[0] for t in self.db.get_campaign_names(server)]
             if campaigns == []:
                 return 'There are no campaigns on this server.'
             else:
@@ -100,7 +107,6 @@ class CampaignSwitcher(commands.Command):
                 out += 'No players'
 
             return out
-                
         elif command == 'nick':
             if not name_check(arg):
                 return 'Only alphanumeric characters can be used in ' + \
@@ -146,16 +152,62 @@ class CampaignSwitcher(commands.Command):
             await self.apply_campaign(message.guild)
             return f'The active campaign is now {new.name}.'
 
-        dm_check = lambda: (campaign.dm is None or \
-            message.author.id == campaign.dm)
-        
-        if not dm_check():
+        if not (campaign.dm is None or message.author.id == campaign.dm):
             return f'Only the DM can use the command {command}.'
+
+        if command == 'day':
+            if arg.lower() == 'none':
+                campaign.day = -1
+                self.db.add_campaign(campaign)
+                return f'Unset the session day for {campaign.name}.'
+
+            try:
+                day = utilities.parse_weekday(arg)
+            except ValueError:
+                return f'{arg} is not a valid day of the week.'
+
+            campaign.day = day
+            self.db.add_campaign(campaign)
+            return f'I have updated the session day for {campaign.name}.'
+        elif command == 'time':
+            if arg.lower() == 'none':
+                campaign.time = -1
+                self.db.add_campaign(campaign)
+                return f'Unset the session time for {campaign.name}.'
+
+            try:
+                time = utilities.parse_time(arg)
+            except ValueError:
+                return f'I couldn\'t parse "{arg}" as a time. Please use ' + \
+                    'the format "H:M" when setting session time.'
+
+            campaign.time = time
+            self.db.add_campaign(campaign)
+            return f'I have updated the session time for {campaign.name}.'
+        elif command == 'notify':
+            if campaign.channel == message.channel.id:
+                campaign.notify = False
+                campaign.channel = None
+                self.db.add_campaign(campaign)
+
+                return f'Notifications have been disabled for {campaign.name}.'
+            else:
+                campaign.notify = True
+                campaign.channel = message.channel.id
+                self.db.add_campaign(campaign)
+
+                return f'Notifications for {campaign.name} ' + \
+                    'will be sent in this channel.'
+        elif command == 'delete':
+            self.db.delete_campaign(campaign)
+            del self.campaigns[server]
+            return f'Deleted the campaign {campaign.name}.'
 
         if not message.mentions or len(message.mentions) > 1:
             return 'This command requires a single mention. e.g. ' + \
                 '"--dnd <command> <mention>".'
         target = message.mentions[0]
+
         if command == 'setdm':    
             campaign.dm = target.id
             await self.set_dm(message.guild)
@@ -196,11 +248,6 @@ class CampaignSwitcher(commands.Command):
             self.db.add_campaign(campaign)
             await self.update_nicknames(message.guild)
             return f'Updated the nickname of {target.display_name}.'
-        elif command == 'delete':
-            self.db.delete_campaign(campaign)
-            del self.campaigns[server]
-            return f'Deleted the campaign {campaign.name}.'
-
 
     def get_active_campaign(self, server):
         if server in self.campaigns:
@@ -264,8 +311,34 @@ class CampaignSwitcher(commands.Command):
         for campaign in self.campaigns.values():
             self.db.add_campaign(campaign)
 
+    async def notify(self, client, period=60, delta=1800):
+        await client.wait_until_ready()
+
+        while not client.is_closed():
+            for name, channel, players in self.db.get_reminders(period, delta):
+                try:
+                    mention_string = \
+                        ' '.join([f'<@{p}>' for p in parse_player_string(players)])
+
+                    channel = discord.utils.find(
+                        lambda c: c.id == channel, 
+                        client.get_all_channels()
+                    )
+
+                    await channel.send(
+                        f'A game for {name} begins in ' + \
+                        f'{int(round(delta / 60, 0))} minutes.\n\n' + \
+                        mention_string
+                    )
+                except:
+                    utilities.log_message('Ran into an issue sending ' + \
+                        f'notification for campaign {name}.')
+                    
+            await asyncio.sleep(period)
+
 class Campaign():
-    def __init__(self, name, server, dm=None, players=None, nicks=None):
+    def __init__(self, name, server, dm=None, players=None, nicks=None,
+        day=-1, time=-1, notify=False, channel=None):
         # str: name of the campaign
         self.name = name 
         # int: discord id of the server
@@ -276,6 +349,14 @@ class Campaign():
         self.players = players if players is not None else []
         # [str]: nicks of the players for campaign
         self.nicks = nicks if nicks is not None else []
+        # int: day of the week, -1 -> unset
+        self.day = day
+        # int: seconds into the day, -1 -> unset
+        self.time = time
+        # bool: whether to notify before given day / time
+        self.notify = notify
+        # int: discord id of the channel to notify in
+        self.channel = channel
 
     def add_player(self, player, nick=''):
         self.players.append(player)
@@ -294,14 +375,21 @@ class Campaign():
         if tup is None:
             return None
 
-        name, dm, players, nicks = tup
+        name, dm, players, nicks, day, time, notify, channel = tup
 
         camp = Campaign(
             name, 
             server, 
             dm, 
-            [int(p) for p in players.split(',')] if players else [],
-            [n.replace('"', '') for n in nicks.split(',')] if nicks else []
+            parse_player_string(players) if players else [],
+            [n.replace('"', '') for n in nicks.split(',')] if nicks else [],
+            day,
+            time,
+            bool(notify),
+            channel
         )
 
         return camp
+
+def parse_player_string(players):
+    return [int(p) for p in players.split(',')]

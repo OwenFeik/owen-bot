@@ -153,5 +153,6 @@ async def on_ready():
     utilities.log_message(f'Logged in as {client.user.name},' + \
         f' ID: {client.user.id}')
     utilities.log_message('==== BEGIN LOG ====')
+    await client.change_presence(activity=discord.Activity(name='try --help'))
 
 bot.start()

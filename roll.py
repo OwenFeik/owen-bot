@@ -70,7 +70,13 @@ class RollCommand(commands.Command):
 
         e = build_embed(rolls, mention, string)
         if command == '--roll':
-            await channel.send(embed=e)
+            try:
+                await channel.send(embed=e)
+            except discord.errors.HTTPException as e:
+                await channel.send(
+                    'Ran into an error. The message may have been too long.'
+                )
+
         elif command in ['--dmroll', '--gmroll']:
             dm = await self.get_dm(message.guild.members)
             if dm is None:
