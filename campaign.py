@@ -98,7 +98,8 @@ class CampaignSwitcher(commands.Command):
             if new is None:
                 return f'No campaign named {arg} exists.'
 
-            self.db.add_campaign(self.campaigns[server])
+            if self.campaigns.get(server) is not None:
+                self.db.add_campaign(self.campaigns[server])
             self.campaigns[server] = new
             self.db.set_active(new)
             await self.apply_campaign(message.guild)
