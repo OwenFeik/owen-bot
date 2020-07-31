@@ -1,7 +1,7 @@
 import socket # socket timeout exception
 import time # limit how often server is rebooted
 
-import paramiko
+# paramiko imported in SSH.__init__ to avoid import if mcserv is disabled
 
 import commands
 
@@ -12,7 +12,8 @@ class SSH():
         self.username = kwargs.get('username')
         self.password = kwargs.get('password')
         self.timeout = kwargs.get('timeout', 3)
-
+        
+        import paramiko
         self.client = paramiko.SSHClient()
         self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
