@@ -107,16 +107,19 @@ class Bot():
             return
 
         if not cmd.will_send:
-            if type(resp) == str:
-                await message.channel.send(resp)
-            elif type(resp) == discord.Embed:
-                await message.channel.send(embed=resp)
-            else:
-                utilities.log_message('Got strange type from command ' + \
-                    f'"{message.content}".')
-                await message.channel.send(
-                    'Ran into an issue with that command.'
-                )
+            try:
+                if type(resp) == str:
+                    await message.channel.send(resp)
+                elif type(resp) == discord.Embed:
+                    await message.channel.send(embed=resp)
+                else:
+                    utilities.log_message('Got strange type from command ' + \
+                        f'"{message.content}".')
+                    await message.channel.send(
+                        'Ran into an issue with that command.'
+                    )
+            except Exception as e:
+                utilities.log_message(f'Ran into issue sending response: {e}')
         
         if cmd.delete_message:
             try:
