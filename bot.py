@@ -120,6 +120,8 @@ class Bot():
                     )
             except Exception as e:
                 utilities.log_message(f'Ran into issue sending response: {e}')
+                await message.channel.send('Failed to send response. ' + \
+                    '@Owen to report.')
         
         if cmd.delete_message:
             try:
