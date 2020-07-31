@@ -1,16 +1,18 @@
-import re
-import random
-import operator
 import heapq
+import operator
+import random
+import re
+
 import discord
-import database
+
 import commands
+import database
 import utilities
 
 class RollCommand(commands.Command):
     def __init__(self, config):
         super().__init__(config)
-        self.commands = ['--roll', '--dmroll', '--gmroll', '--setdm']
+        self.commands = ['--roll', '--dmroll', '--gmroll']
         self.delete_message = True
         self.will_send = True
         self.dm_role = config['dm_role']

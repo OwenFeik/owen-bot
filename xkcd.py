@@ -1,10 +1,12 @@
-import requests # Pull raw data from xkcd website
-import re # Parse xkcd html for relevant data
 import asyncio # More efficiently collect xkcds
+import difflib # Get similarly named comics
+import re # Parse xkcd html for relevant data
+
 import discord
-from difflib import SequenceMatcher # Get similarly named comics
+import requests # Pull raw data from xkcd website
+
 import database
-from utilities import log_message # Send messages in the log
+import utilities # Send messages in the log
 
 class xkcd():
     def __init__(self,idno=0,name='',uri='',alt=''):
@@ -82,10 +84,10 @@ async def update_db():
     for call in calls: # Run calls
         strip=await call # By using async, mitigate waiting on xkcd server
         db.insert_xkcd(strip) # Add to db
-        log_message(f'Added new xkcd comic {strip.name}.')
+        utilities.log_message(f'Added new xkcd comic {strip.name}.')
     
     db.close()
-    log_message('xkcd database up to date!')
+    utilities.log_message('xkcd database up to date!')
 
 def get_list(): # Grab the list of names of xkcds
     db=database.XKCD_Database('resources/bot.db')
@@ -100,7 +102,7 @@ def sugg(query):
     best=0.5 # Suggestions must be at least 50% similar
     best_name='not available' # the comic "not available" is our 404 message
     for name in get_list():
-        r=SequenceMatcher(a=name,b=query).ratio()
+        r=difflib.SequenceMatcher(a=name,b=query).ratio()
         if r>best:
             best=r
             best_name=name

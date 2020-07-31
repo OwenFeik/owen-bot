@@ -1,5 +1,8 @@
 import socket # socket timeout exception
 import time # limit how often server is rebooted
+
+import paramiko
+
 import commands
 
 class SSH():
@@ -10,7 +13,6 @@ class SSH():
         self.password = kwargs.get('password')
         self.timeout = kwargs.get('timeout', 3)
 
-        import paramiko
         self.client = paramiko.SSHClient()
         self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 

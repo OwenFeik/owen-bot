@@ -1,5 +1,6 @@
 import json
 import re
+
 import emoji
 
 def translate(string, replacement):
@@ -12,7 +13,7 @@ def translate(string, replacement):
 
     for c in string.lower():
         if not c in alphabet:
-            return f'Sorry, character {c} not available, only letters can be used.'
+            return f'Sorry, character "{c}" not available, only letters can be used.'
         letters.append(alphabet[c])
 
     output = ''

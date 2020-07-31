@@ -1,6 +1,7 @@
-import requests
 import difflib
+
 import discord
+import requests
 
 # More or less copied over from https://github.com/OwenFeik/spells
 

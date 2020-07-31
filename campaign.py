@@ -82,6 +82,27 @@ class CampaignSwitcher(commands.Command):
                 return 'There are no campaigns on this server.'
             else:
                 return 'Campaigns on this server:\n\t' + '\n\t'.join(campaigns)
+        elif command == 'campaign':
+            if not name_check(arg):
+                return 'Only aplhanumeric characters can be used in ' + \
+                    f'campaign names. "{arg}" cannot be a campaign.'
+
+            if campaign is not None and campaign.name.lower() == arg.lower():
+                return f'{campaign.name} is already the active campaign.'
+
+            new = Campaign.from_db_tup(
+                self.db.get_campaign(arg, server),
+                server
+            )
+
+            if new is None:
+                return f'No campaign named {arg} exists.'
+
+            self.db.add_campaign(self.campaigns[server])
+            self.campaigns[server] = new
+            self.db.set_active(new)
+            await self.apply_campaign(message.guild)
+            return f'The active campaign is now {new.name}.'
 
         if campaign is None:
             return f'No active campaign, ' + \
@@ -130,27 +151,7 @@ class CampaignSwitcher(commands.Command):
             self.db.add_campaign(campaign)
             return f'Removed {message.author.display_name} from ' + \
                 f'{campaign.name}.'
-        elif command == 'campaign':
-            if not name_check(arg):
-                return 'Only aplhanumeric characters can be used in ' + \
-                    f'campaign names. "{arg}" cannot be a campaign.'
 
-            if campaign.name.lower() == arg.lower():
-                return f'{campaign.name} is already the active campaign.'
-
-            new = Campaign.from_db_tup(
-                self.db.get_campaign(arg, server),
-                server
-            )
-
-            if new is None:
-                return f'No campaign named {arg} exists.'
-
-            self.db.add_campaign(self.campaigns[server])
-            self.campaigns[server] = new
-            self.db.set_active(new)
-            await self.apply_campaign(message.guild)
-            return f'The active campaign is now {new.name}.'
 
         if not (campaign.dm is None or message.author.id == campaign.dm):
             return f'Only the DM can use the command {command}.'
@@ -196,8 +197,20 @@ class CampaignSwitcher(commands.Command):
                 campaign.channel = message.channel.id
                 self.db.add_campaign(campaign)
 
+                if campaign.day == -1 and campaign.time == -1:
+                    reminder_string = ' Remember to set a day and time to ' + \
+                        'get notified!'
+                elif campaign.day == -1:
+                    reminder_string = ' A session time has been set, but ' + \
+                        'the session day must be set to enable notifications.'
+                elif campaign.time == -1:
+                    reminder_string = ' A session day has been set, but ' + \
+                        'the session time must be set to enable notifications.'
+                else:
+                    reminder_string = ''
+
                 return f'Notifications for {campaign.name} ' + \
-                    'will be sent in this channel.'
+                    'will be sent in this channel.' + reminder_string
         elif command == 'delete':
             self.db.delete_campaign(campaign)
             del self.campaigns[server]
