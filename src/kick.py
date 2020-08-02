@@ -10,9 +10,12 @@ class Kick(commands.Command):
         self.commands = ['--kick']
         self.interval = config['kick_interval']
         self.votes = []
+        self.cooldown = []
 
     async def handle(self, message):
         self.scrub_votes()
+        self.scrub_cooldown()
+        
         if not message.mentions:
             return 'Usage: "--kick <mention>" e.g. "--kick @BadPerson".'
         if len(message.mentions) > 1:
@@ -22,6 +25,11 @@ class Kick(commands.Command):
         if type(target) != discord.Member:
             return 'Sorry, I can\'t find voice information for ' + \
                 f'{target.display_name}.'
+
+        if self.on_cooldown(target):
+            return f'{target.display_name} has been kicked to recently. ' + \
+                'I only kick people at most once every '+ \
+                f'{self.interval // 60} minutes.'
 
         if target.voice is None:
             return f'{target.display_name} isn\'t in a voice channel.'
@@ -47,6 +55,7 @@ class Kick(commands.Command):
             try:
                 await target.move_to(None, 
                     reason='Democracy is a beautiful thing.')
+                self.cooldown.append((target, time.time()))
             except discord.Forbidden:
                 return 'Tragically, I don\'t have permission to do that.'
             
@@ -61,6 +70,17 @@ class Kick(commands.Command):
         vote = Vote(target, sender, channel)
         self.votes = [v for v in self.votes if not v.redundant(vote)]
         self.votes.append(vote)
+
+    def scrub_cooldown(self):
+        t = time.time()
+        self.cooldown = [(tg, tm) for tg, tm in self.cooldown if \
+            t - tm < self.interval]
+
+    def on_cooldown(self, user):
+        for c in self.cooldown:
+            if user in c:
+                return True
+        return False
 
     def scrub_votes(self, user=None):
         t = time.time()
