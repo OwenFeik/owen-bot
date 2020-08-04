@@ -4,16 +4,20 @@ import time
 
 class Logger():
     def __init__(self):
+        self.log_to_file = True
         self.path = 'resources/.log'
-        self.file = open(self.path, 'a')
 
     def log(self, msg):
-        timestring = time.strftime('%d/%m %T')
-        self.file.write(f'<{timestring}> {msg}')
+        if not self.log_to_file:
+            print(msg)
+            return
+
+        with open(self.path, 'a') as f:
+            timestring = time.strftime('%d/%m %T')
+            f.write(f'<{timestring}> {msg}\n')
 
     def set_path(self, path):
         self.path = path
-        self.file = open(path, 'a')
 
 logger = Logger()
 log_message = logger.log

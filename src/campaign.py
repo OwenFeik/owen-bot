@@ -133,6 +133,11 @@ class CampaignSwitcher(commands.Command):
             if not name_check(arg):
                 return 'Only alphanumeric characters can be used in ' + \
                     f'nicknames. "{arg}" is inadmissable.'
+            if message.guild.owner and \
+                message.author.id == message.guild.owner.id:
+                
+                return f'{target.display_name} is the guild owner ' + \
+                    f'which means I can\'t set their nickname.'
 
             campaign.set_nick(message.author.id, arg)
             await message.author.edit(nick=arg)
@@ -249,6 +254,9 @@ class CampaignSwitcher(commands.Command):
             if target.id not in campaign.players:
                 return f'{target.display_name} isn\'t in the ' + \
                     f'current campaign ({campaign.name}).'
+            if message.guild.owner and target.id == message.guild.owner.id:
+                return f'{target.display_name} is the guild owner ' + \
+                    f'which means I can\'t set their nickname.'
 
             nick = arg
             for uid in message.raw_mentions:
@@ -288,7 +296,7 @@ class CampaignSwitcher(commands.Command):
                 missing_players.append(p)
                 continue
 
-            if member.nick != n:
+            if member.nick != n and p != server.ownerID:
                 await member.edit(nick=n)
 
         # remove players who have left the server
