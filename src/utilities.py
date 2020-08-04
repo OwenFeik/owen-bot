@@ -2,17 +2,30 @@ import json
 import re
 import time
 
-def log_message(msg): 
-    timestring = time.strftime('%d/%m %T')
-    print(f'<{timestring}> {msg}')
-    
+class Logger():
+    def __init__(self):
+        self.path = 'resources/.log'
+        self.file = open(self.path, 'a')
+
+    def log(self, msg):
+        timestring = time.strftime('%d/%m %T')
+        self.file.write(f'<{timestring}> {msg}')
+
+    def set_path(self, path):
+        self.path = path
+        self.file = open(path, 'a')
+
+logger = Logger()
+log_message = logger.log
+set_log_file = logger.set_path
+
 def load_config(): # Load the config file
     try:
-        with open('resources/config.json','r') as f:
+        with open('resources/config.json', 'r') as f:
             return json.load(f) # And return a dictionary with the relevant points
     except FileNotFoundError:
         log_message('No config file found. Exiting.')
-        exit()
+        raise SystemExit
 
 def load_help():
     try:
@@ -25,7 +38,7 @@ def load_help():
 def scrub_message_of_mentions(message):
     text = message.content
     for uid in message.raw_mentions:
-        text = text.replace(f'<@{uid}>', '')
+        text = text.replace(f'<@{uid}>', '').replace(f'<@!{uid}>', '')
     return text
     
 def parse_weekday(string):

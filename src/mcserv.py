@@ -82,7 +82,7 @@ class Minecraft(commands.Command):
         self.previous_reboot = 0
         self.votes = []
 
-    def handle(self, message):
+    async def handle(self, message):
         command = message.content[len(self.commands[0]):].strip()
         sender = str(message.author)
 
