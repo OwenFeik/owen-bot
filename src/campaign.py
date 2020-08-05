@@ -1,5 +1,4 @@
 import asyncio
-import time
 
 import discord
 
@@ -136,8 +135,11 @@ class CampaignSwitcher(commands.Command):
             if message.guild.owner and \
                 message.author.id == message.guild.owner.id:
                 
-                return f'{target.display_name} is the guild owner ' + \
-                    f'which means I can\'t set their nickname.'
+                return 'You are the guild owner ' + \
+                    'which means I can\'t set your nickname.'
+            if not message.author.id in campaign.players:
+                return 'You must join the campaign with "--dnd join" ' + \
+                    'before you can set a nickname.'
 
             campaign.set_nick(message.author.id, arg)
             await message.author.edit(nick=arg)
@@ -256,7 +258,7 @@ class CampaignSwitcher(commands.Command):
                     f'current campaign ({campaign.name}).'
             if message.guild.owner and target.id == message.guild.owner.id:
                 return f'{target.display_name} is the guild owner ' + \
-                    f'which means I can\'t set their nickname.'
+                    'which means I can\'t set their nickname.'
 
             nick = arg
             for uid in message.raw_mentions:

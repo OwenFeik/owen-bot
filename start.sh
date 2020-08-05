@@ -17,5 +17,5 @@ if sudo docker ps | grep -q "owen-bot"; then
 fi
 yes | sudo docker system prune
 sudo docker build -t "owen-bot" .
-sudo docker run -d --name "owen-bot" \
+sudo docker run -d --name "owen-bot" -e TZ=Australia/Melbourne \
 	-v $(pwd)/resources:/owen-bot/resources "owen-bot"
