@@ -298,7 +298,7 @@ class CampaignSwitcher(commands.Command):
                 missing_players.append(p)
                 continue
 
-            if member.nick != n and p != server.ownerID:
+            if member.nick != n and p != server.owner.id:
                 await member.edit(nick=n)
 
         # remove players who have left the server
