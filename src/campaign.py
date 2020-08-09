@@ -111,17 +111,24 @@ class CampaignSwitcher(commands.Command):
         if command == 'members':
             out = f'Members of campaign {campaign.name}:\n\t'
             if campaign.dm:
-                dm_name = message.guild.get_member(campaign.dm).display_name
-                out += f'DM: {dm_name if dm_name else ""}\n\t'
+                try: 
+                    dm_name = message.guild.get_member(
+                        campaign.dm).display_name
+                    out += f'DM: {dm_name if dm_name else ""}\n\t'
+                except Exception as e:
+                    utilities.log_message(f'Failed to add DM name: {e}')
             else:
                 out += f'No DM\n\t'
 
             if campaign.players:
                 member_names = []
                 for p, n in zip(campaign.players, campaign.nicks):
-                    name = message.guild.get_member(p).display_name
-                    name += (f' ({n})' if n else '') 
-                    member_names.append(name)
+                    try:
+                        name = message.guild.get_member(p).display_name
+                        name += (f' ({n})' if n else '') 
+                        member_names.append(name)
+                    except Exception as e:
+                        utilities.log_message(f'Failed to add name: {e}')
                 
                 out += '\n\t'.join(member_names)
             else:
