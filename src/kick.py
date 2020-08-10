@@ -27,7 +27,7 @@ class Kick(commands.Command):
                 f'{target.display_name}.'
 
         if self.on_cooldown(target):
-            return f'{target.display_name} has been kicked to recently. ' + \
+            return f'{target.display_name} has been kicked too recently. ' + \
                 'I only kick people at most once every '+ \
                 f'{self.interval // 60} minutes.'
 
