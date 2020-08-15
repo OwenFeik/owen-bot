@@ -268,10 +268,10 @@ def clean_number(num):
 
 def get_rolls(string):
     rolls = []
-    regex = r'(?P<op>[+-/*]?)? *(?P<n>\d+(?= +))? *(?P<qty>\d*)d' + \
-        r'(?P<die>\d+) *(?P<advstr>[ad]*)' + \
-        r'(?P<mods>( *(k *\d+|[+-/*] *\d+(?!d)))*)'
-    
+    regex = r'(?P<val>\d+(?= *[+-/*]))? *(?P<op>[+-/*]?)? *(?P<n>\d+' + \
+        r'(?= +))? *(?P<qty>\d*)d(?P<die>\d+) *(?P<advstr>[ad]*)' + \
+        r'(?P<mods>( *(k *\d+|[+-/*] *\d+(?!d)))*(?![\dd]))'
+
     for roll in re.finditer(regex, string):
         n = roll.group('n')
         if n in [None, '']:
@@ -319,9 +319,16 @@ def get_rolls(string):
 
         op = roll.group('op')
         if op in [None, ''] or n > 1:
+            opstr = '+'
+        else:
+            opstr = op
+
+        val = roll.group('val')
+        if not val in [None, '']:
+            mods.insert(0, Modifier(int(val), op))
             op = get_operator('+')
         else:
-            op = get_operator(op)
+            op = get_operator(opstr)
 
         for _ in range(n):
             rolls.append(Roll(qty, die, adv, disadv, keep, mods, op))
