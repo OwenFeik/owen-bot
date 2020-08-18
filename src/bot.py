@@ -1,5 +1,6 @@
 # Requires Python 3.6
 
+import difflib
 import re
 
 import discord
@@ -59,8 +60,6 @@ class Bot():
             except AssertionError:
                 utilities.log_message(f'{p} disabled.')
 
-        self.regex = f"^({'|'.join(self.commands)})"
-
         self.token = config['token']
         
     def start(self):
@@ -77,18 +76,34 @@ class Bot():
 
         cmd = None
         if message.content.startswith('--'):
-            if message.content.startswith('--all'):
-                await message.channel.send('\n'.join(self.commands))
-                return
+            match = re.search(r'^--[a-zA-Z]+', message.content.lower())
 
-            match = re.search(self.regex, message.content.lower())
             if match is None:
                 await message.channel.send(
-                    'I don\'t recognise that command. Try "--all" or "--help".'
+                    'Commands are called via `--<command>`. Try `--all` ' + \
+                    'to see a list of commands or `--help` for further assistance.'
                 )
                 return
 
-            cmd = self.commands[match.group(0)]
+            cmd_str = match.group(0)
+            if cmd_str == '--all':
+                await message.channel.send('\n'.join(self.commands))
+                return
+            elif cmd_str in self.commands:
+                cmd = self.commands[match.group(0)]
+            else:
+                suggestions = difflib.get_close_matches(cmd_str, self.commands)
+                if suggestions:
+                    await message.channel.send(
+                        f'Command `{cmd_str}` doesn\'t exist. ' + \
+                        f'Perhaps you meant `{suggestions[0]}`?'
+                    )
+                else:
+                    await message.channel.send(
+                        f'Command "{cmd_str}" doesn\'t exist. Try `--all` ' + \
+                        'to see a list of commands.'
+                    )
+                return
         else:
             for pattern in self.patterns:
                 if re.search(pattern.regex, message.content):
