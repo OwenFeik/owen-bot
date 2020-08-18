@@ -73,22 +73,44 @@ def parse_weekday(string):
     except KeyError:
         raise ValueError('Not a valid day of the week.')
 
+def time_range_check(h = 0, m = 0, s = 0):
+    message = 'Hours value must be in the range [0, 24].'
+    try:
+        assert 0 <= h <= 24
+        message = 'Minutes value must be in the range [0, 60].'
+        assert 0 <= m <= 60
+        message = 'Seconds value must be in the range [0, 60].'
+        assert 0 <= s <= 60
+    except AssertionError:
+        raise ValueError(message)
+
 def parse_time(string):
     string = string.strip().lower()
 
     if re.match(r'^\d{1,2}:\d{1,2}(:\d{1,2})?$', string):
-        hours, minutes, *_ = string.split(':')
-        return int(hours) * 3600 + int(minutes) * 60
-    elif string.isnumeric() and (0 < int(string) < 24):
-        return int(string) * 3600
+        hours, minutes, *seconds = string.split(':')
+        hours = int(hours)
+        minutes = int(minutes)
+        seconds = int(seconds[0]) if seconds else 0
+        time_range_check(hours, minutes, seconds)
+        return hours * 3600 + minutes * 60 + seconds
+    elif string.isnumeric():
+        hours = int(string)
+        time_range_check(hours)
+        return hours * 3600
     elif re.match(r'^\d{1,2}:\d{1,2}(:\d{1,2})? ?(pm|am)$', string):
         string, period = string[:-2], string[-2:]
-        hours, minutes, *_ = string.split(':')
-        return int(hours) * 3600 + int(minutes) * 60 + \
+        hours, minutes, *seconds = string.split(':')
+        hours = int(hours)
+        minutes = int(minutes)
+        seconds = int(seconds[0]) if seconds else 0
+        time_range_check(hours, minutes, seconds)
+        return hours * 3600 + minutes * 60 + \
             (0 if period == 'am' else 3600 * 12)
     elif re.match(r'^\d{1,2} ?(pm|am)$', string):
         string, period = string[:-2], string[-2:]
         hours = int(string.strip())
+        time_range_check(hours)
         return hours * 3600 + (0 if period == 'am' else 3600 * 12)
     else:
-        raise ValueError('Not a valid time format.')
+        raise ValueError('Not a valid time format. Please use HH:MM.')
