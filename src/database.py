@@ -48,9 +48,7 @@ class Database:
             utilities.log_message(f'Ocurred on command: {command}')
 
 database = Database()
-async def init_db(file):
-    global database
-    await database.make_connection(file)
+init_db = database.make_connection
 
 class Interface():
     def __init__(self):
