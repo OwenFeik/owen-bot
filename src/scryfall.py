@@ -4,6 +4,8 @@ import re # Find queries in a message
 import requests # Grab card data from scryfall
 import discord
 
+import utilities
+
 class Card:
     colours = {
         'W': (248, 231, 185),
@@ -139,7 +141,7 @@ class Query():
                         self.card = found
                 else: # We found nothing
                     self.msg = 'I\'m afraid I couldn\'t find ' + \
-                        f'"{capitalise(self.query)}" in "{self.ed}".'
+                        f'"{utilities.capitalise(self.query)}" in "{self.ed}".'
             else:
                 found = get_fuzzy(self.query)
                 if found:
@@ -150,7 +152,7 @@ class Query():
                         self.msg = suggs
                     else:
                         self.msg = 'I\'m afraid I couldn\'t find ' + \
-                            f'"{capitalise(self.query)}".'
+                            f'"{utilities.capitalise(self.query)}".'
     
     @property
     def found(self):
@@ -163,7 +165,7 @@ class Query():
             return self.msg
         else: #If we don't have a card or a message, there's a problem
             return 'Oops, something went wrong when I was looking for ' + \
-                f'"{capitalise(self.query)}". Let Owen know!'
+                f'"{utilities.capitalise(self.query)}". Let Owen know!'
 
 
 # Return query objects for each card found in the message
@@ -219,7 +221,8 @@ def get_printing(query, ed):
             random.shuffle(data)
             data = data[0:5] #Pick 5 at random
             data.sort()
-        msg = f"I couldn't find {capitalise(query)} in {ed.upper()}. Maybe you meant:\n\n" # Make a string for the suggestions
+        msg = f'I couldn\'t find {utilities.capitalise(query)} in ' + \
+            f'{ed.upper()}. Maybe you meant:\n\n'
         for sugg in data:
             msg += '\t' + sugg + '\n'
         return msg
@@ -255,40 +258,8 @@ def get_suggs(query):
         data = data[0:5] #Pick 5 at random
         data.sort()
 
-    msg = f"Couldn't find {capitalise(query)}. Maybe you meant:\n\n" 
+    msg = f'Couldn\'t find {utilities.capitalise(query)}. Maybe you meant:\n\n'
     for sugg in data:
         msg += '\t'+sugg+'\n'
     
     return msg
-
-#Capitalise a card name
-def capitalise(name):
-    name = name.strip().lower()
-    name = name.replace(name[0], name[0].upper(), 1)
-    skip = [
-        'a',
-        'an',
-        'at',
-        'and',
-        'are',
-        'but',
-        'by',
-        'for',
-        'from',
-        'not',
-        'nor',
-        'of',
-        'or',
-        'so',
-        'the',
-        'with',
-        'yet'
-    ]
-
-    words = name.split(' ')
-    for i in range(1, len(words)):
-        c = words[i][0]
-        if c.isalpha() and not words[i] in skip or i == len(words) - 1:
-            words[i] = words[i].replace(c, c.upper(), 1)
-    
-    return ' '.join(words)
