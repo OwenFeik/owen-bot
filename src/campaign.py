@@ -27,9 +27,9 @@ class CampaignSwitcher(commands.Command):
         if command == '':
             if campaign is not None:
                 return f'The current campaign is {campaign.name}. ' + \
-                    'See "--dnd help" or "--dnd all" for available operations.'
+                    'See `--dnd help` or `--dnd all` for available operations.'
             else:
-                return 'Start a campaign with "--dnd new <name>".'            
+                return 'Start a campaign with `--dnd new <name>`.'            
 
         options = [
             'add',
@@ -52,7 +52,7 @@ class CampaignSwitcher(commands.Command):
         ]
         if not (command in options):
             return 'That command doesn\'t exist. ' + \
-                'Try "--dnd all" to see a list of options.'
+                'Try `--dnd all` to see a list of options.'
 
         if command == 'all':
             return '--dnd ' + '\n--dnd '.join(options)
@@ -107,7 +107,7 @@ class CampaignSwitcher(commands.Command):
 
         if campaign is None:
             return f'No active campaign, ' + \
-                f'start one with "--dnd new <name>" to use {command}.'
+                f'start one with `--dnd new <name>` to use {command}.'
 
         if command == 'members':
             out = f'Members of campaign {campaign.name}:\n\t'
@@ -146,7 +146,7 @@ class CampaignSwitcher(commands.Command):
                 return 'You are the guild owner ' + \
                     'which means I can\'t set your nickname.'
             if not message.author.id in campaign.players:
-                return 'You must join the campaign with "--dnd join" ' + \
+                return 'You must join the campaign with `--dnd join` ' + \
                     'before you can set a nickname.'
 
             campaign.set_nick(message.author.id, arg)
@@ -196,9 +196,8 @@ class CampaignSwitcher(commands.Command):
 
             try:
                 time = utilities.parse_time(arg)
-            except ValueError:
-                return f'I couldn\'t parse "{arg}" as a time. Please use ' + \
-                    'the format "H:M" when setting session time.'
+            except ValueError as e:
+                return f'I couldn\'t parse "{arg}" as a time. {e}'
 
             campaign.time = time
             await self.db.add_campaign(campaign)
@@ -236,7 +235,7 @@ class CampaignSwitcher(commands.Command):
 
         if not message.mentions or len(message.mentions) > 1:
             return 'This command requires a single mention. e.g. ' + \
-                '"--dnd <command> <mention>".'
+                '`--dnd <command> <mention>`.'
         target = message.mentions[0]
 
         if command == 'setdm':    
