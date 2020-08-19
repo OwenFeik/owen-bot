@@ -1,5 +1,6 @@
 # Requires Python 3.6
 
+import asyncio
 import re
 
 import discord
@@ -36,11 +37,12 @@ class Bot():
         commands.Scryfall
     ]
 
-    def __init__(self, client):
+    def __init__(self, client, loop):
         config = utilities.load_config()
         config['client'] = client
         self.client = client
-        self.db = database.Discord_Database(config['db_file'])
+
+        self.db = database.Discord_Database()
 
         self.commands = {}
         for i in self.instructions:
@@ -62,6 +64,8 @@ class Bot():
         self.regex = f"^({'|'.join(self.commands)})"
 
         self.token = config['token']
+
+        loop.run_until_complete(database.init_db(config['db_file']))
         
     def start(self):
         client.run(self.token)
@@ -71,8 +75,8 @@ class Bot():
             return
 
         if message.guild is not None:
-            self.db.insert_user(message.author)
-            self.db.insert_server(message.guild)
+            await self.db.insert_user(message.author)
+            await self.db.insert_server(message.guild)
         self.log_message(message)
 
         cmd = None
@@ -146,8 +150,9 @@ class Bot():
             utilities.log_message(message.author.display_name + \
                 f' sent an attachment to {guild_string}.')
 
-client = discord.Client()
-bot = Bot(client)
+loop = asyncio.get_event_loop()
+client = discord.Client(loop=loop)
+bot = Bot(client, loop=loop)
 
 @client.event
 async def on_message(message):

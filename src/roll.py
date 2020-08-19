@@ -17,7 +17,7 @@ class RollCommand(commands.Command):
         self.will_send = True
         self.dm_role = config['dm_role']
         self.failstr = 'Invalid format'
-        self.db = database.Roll_Database(config['db_file'])
+        self.db = database.Roll_Database()
 
     async def handle(self, message):
         self.delete_message = True
@@ -37,17 +37,17 @@ class RollCommand(commands.Command):
 
         if 'stats' in string:
             if string == 'stats':            
-                e = stats_embed(self.db.get_rolls(user, server), mention)         
+                e = stats_embed(await self.db.get_rolls(user, server), mention)        
                 await channel.send(embed=e)
             elif string == 'reset stats':
                 self.delete_message = False
-                self.db.reset_rolls(user)
+                await self.db.reset_rolls(user)
                 await channel.send(f'Your stored rolls have been deleted.')
             elif string == 'reset server stats':
                 self.delete_message = False
                 if server == None:
                     await channel.send('I don\'t track stats in DMs sorry.')
-                self.db.reset_rolls(user, server)
+                await self.db.reset_rolls(user, server)
                 await channel.send(
                     f'Your stored rolls on {server.name} have been deleted.'
                 )
@@ -68,7 +68,7 @@ class RollCommand(commands.Command):
 
         if server and user:
             for roll in rolls:
-                self.db.insert_roll(roll, user, server)
+                await self.db.insert_roll(roll, user, server)
 
         e = build_embed(rolls, mention, string)
         if command == '--roll':

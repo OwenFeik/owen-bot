@@ -92,3 +92,34 @@ def parse_time(string):
         return hours * 3600 + (0 if period == 'am' else 3600 * 12)
     else:
         raise ValueError('Not a valid time format.')
+
+def capitalise(name):
+    name = name.strip().lower()
+    name = name.replace(name[0], name[0].upper(), 1)
+    skip = [
+        'a',
+        'an',
+        'at',
+        'and',
+        'are',
+        'but',
+        'by',
+        'for',
+        'from',
+        'not',
+        'nor',
+        'of',
+        'or',
+        'so',
+        'the',
+        'with',
+        'yet'
+    ]
+
+    words = name.split(' ')
+    for i in range(1, len(words)):
+        c = words[i][0]
+        if c.isalpha() and not words[i] in skip or i == len(words) - 1:
+            words[i] = words[i].replace(c, c.upper(), 1)
+    
+    return ' '.join(words)

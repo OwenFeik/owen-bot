@@ -47,19 +47,19 @@ class xkcd():
         
         return self
 
-def get_xkcd(query):
-    db=database.XKCD_Database('resources/bot.db')
-    query=query.lower()
-    if query=='random':
-        xkcd_tuple = db.get_random_xkcd()
+async def get_xkcd(query):
+    db = database.XKCD_Database()
+    query = query.lower()
+    if query == 'random':
+        xkcd_tuple = await db.get_random_xkcd()
     elif query in ['new','newest']:
-        xkcd_tuple = db.get_newest_xkcd()
+        xkcd_tuple = await db.get_newest_xkcd()
     elif query.isnumeric():
-        xkcd_tuple = db.get_id(query)
-    elif list_check(query): # If there is a comic of this name
-        xkcd_tuple = db.get_xkcd(query)
+        xkcd_tuple = await db.get_id(query)
+    elif await list_check(query):
+        xkcd_tuple = await db.get_xkcd(query)
     else:
-        xkcd_tuple = db.get_xkcd(sugg(query)) # Otherwise find a similar one
+        xkcd_tuple = await db.get_xkcd(await sugg(query))
     return get_embed(xkcd_tuple)
 
 def get_embed(xkcd_tuple):
@@ -69,43 +69,42 @@ def get_embed(xkcd_tuple):
     return e
 
 async def update_db():
-    current=get_list() # list of comics currently in the database
-    db=database.XKCD_Database('resources/bot.db')
-    r=requests.get('https://xkcd.com/archive/') # Grab the archive page, a list of all xkcd comics
-    raw_names=re.findall('[0-9]{0,4}/" title="[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}">[^<>]+<',r.content.decode()) # Grab sections of html containing names
-    xkcds=[]
+    current = await get_list() # list of comics currently in the database
+    db = database.XKCD_Database()
+    r = requests.get('https://xkcd.com/archive/') # Grab the archive page, a list of all xkcd comics
+    raw_names = re.findall('[0-9]{0,4}/" title="[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}">[^<>]+<',r.content.decode()) # Grab sections of html containing names
+    xkcds = []
     for name in raw_names:
-        strip=xkcd.from_raw_name(name) # Create an xkcd object from the raw data
+        strip = xkcd.from_raw_name(name) # Create an xkcd object from the raw data
         if not strip.name in current: # We only need to add comics we don't have
             xkcds.append(strip)
 
-    loop=asyncio.get_event_loop() # Object used to execute requests with asyncio
-    calls=[loop.run_in_executor(None,strip.get_uri_alt) for strip in xkcds] # Create a call for each strip
+    loop = asyncio.get_event_loop() # Object used to execute requests with asyncio
+    calls = [loop.run_in_executor(None,strip.get_uri_alt) for strip in xkcds] # Create a call for each strip
     for call in calls: # Run calls
-        strip=await call # By using async, mitigate waiting on xkcd server
-        db.insert_xkcd(strip) # Add to db
+        strip = await call # By using async, mitigate waiting on xkcd server
+        await db.insert_xkcd(strip) # Add to db
         utilities.log_message(f'Added new xkcd comic {strip.name}.')
     
-    db.close()
     utilities.log_message('xkcd database up to date!')
 
-def get_list(): # Grab the list of names of xkcds
-    db=database.XKCD_Database('resources/bot.db')
-    return db.get_xkcd_list()
+async def get_list(): # Grab the list of names of xkcds
+    db = database.XKCD_Database()
+    return await db.get_xkcd_list()
 
-def list_check(query): # Ensure we have the xkcd of name 'query'
-    if query in get_list():
+async def list_check(query): # Ensure we have the xkcd of name 'query'
+    if query in await get_list():
         return True
     return False
 
-def sugg(query):
-    best=0.5 # Suggestions must be at least 50% similar
-    best_name='not available' # the comic "not available" is our 404 message
-    for name in get_list():
-        r=difflib.SequenceMatcher(a=name,b=query).ratio()
-        if r>best:
-            best=r
-            best_name=name
+async def sugg(query):
+    best = 0.5 # Suggestions must be at least 50% similar
+    best_name = 'not available' # the comic "not available" is our 404 message
+    for name in await get_list():
+        r = difflib.SequenceMatcher(a=name, b=query).ratio()
+        if r > best:
+            best = r
+            best_name = name
     return best_name
 
 # Allow this file to be run with a cron job or similar
