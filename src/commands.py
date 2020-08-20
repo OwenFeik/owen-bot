@@ -237,7 +237,7 @@ class XKCD(Command):
 
     async def _handle(self, argument):
         if argument:
-            return xkcd.get_xkcd(argument)
+            return await xkcd.get_xkcd(argument)
         return 'Use "--xkcd <comic name>" or "--xkcd <number>" to find an' + \
             'xkcd comic, or "--xkcd random" for a random comic.'
 
