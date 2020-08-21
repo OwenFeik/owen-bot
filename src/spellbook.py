@@ -144,6 +144,7 @@ def get_embed_description(spell):
 
     return description
 
+# 1024: max field size
 def chunk_spell_desc(desc):
     if len(desc) < 1024:
         return [desc]
@@ -154,9 +155,25 @@ def chunk_spell_desc(desc):
         if len(desc[i]) > 1024:
             if '\n' in desc[i]:
                 chunks = desc[i].split('\n')
-                del desc[i]
-                for c in reversed(chunks):
-                    desc.insert(i, c)
+            else:
+                chunks = [desc[i]]
+            del desc[i]
+            
+            for c in reversed(chunks):
+                while len(c) > 1024:
+                    # try to split along a sentenc boundary
+                    for j in range(1000, 0, -1):
+                        if c[j] == '.':
+                            desc.insert(i, c[:j + 1])
+                            c = c[j + 1:]
+                            i += 1
+                            break
+                    # give up an just chunk off 1k chars
+                    else:
+                        desc.insert(i, c[:1000 + 1])
+                        c = c[1000 + 1:]
+                        i+=1
+                desc.insert(i, c)
         i += 1
 
     return desc

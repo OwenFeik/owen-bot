@@ -13,13 +13,13 @@ class CampaignSwitcher(commands.Command):
         self.commands = ['--dnd']
         self.dm_role = config['dm_role']
         self.campaigns = {}
-        self.db = database.Campaign_Database(config['db_file'])
+        self.db = database.Campaign_Database()
         self.help_message = utilities.load_help()['dnd']
         config['client'].loop.create_task(self.notify(config['client']))
 
     async def handle(self, message):
         server = message.guild.id
-        campaign = self.get_active_campaign(server)
+        campaign = await self.get_active_campaign(server)
         text = message.content[len(self.commands[0]):].strip()
         command = text.split(' ')[0].lower()
         arg = text[len(command):].strip()
@@ -65,18 +65,19 @@ class CampaignSwitcher(commands.Command):
                     f'campaign names. "{arg}" is inadmissable.'
 
             if campaign:
-                self.db.add_campaign(campaign)
+                await self.db.add_campaign(campaign)
 
-            if not self.db.get_campaign(arg, server):
+            if not await self.db.get_campaign(arg, server):
                 self.campaigns[server] = Campaign(arg, server)
-                self.db.add_campaign(self.campaigns[server])
+                await self.db.add_campaign(self.campaigns[server])
                 return f'Created new campaign {arg} and set it as active.'
             else:
                 return f'The campaign {arg} already exists!'
         elif command == 'help':
             return self.help_message
         elif command == 'list':
-            campaigns = [t[0] for t in self.db.get_campaign_names(server)]
+            campaigns = \
+                [t[0] for t in await self.db.get_campaign_names(server)]
             if campaigns == []:
                 return 'There are no campaigns on this server.'
             else:
@@ -90,7 +91,7 @@ class CampaignSwitcher(commands.Command):
                 return f'{campaign.name} is already the active campaign.'
 
             new = Campaign.from_db_tup(
-                self.db.get_campaign(arg, server),
+                await self.db.get_campaign(arg, server),
                 server
             )
 
@@ -98,9 +99,9 @@ class CampaignSwitcher(commands.Command):
                 return f'No campaign named {arg} exists.'
 
             if self.campaigns.get(server) is not None:
-                self.db.add_campaign(self.campaigns[server])
+                await self.db.add_campaign(self.campaigns[server])
             self.campaigns[server] = new
-            self.db.set_active(new)
+            await self.db.set_active(new)
             await self.apply_campaign(message.guild)
             return f'The active campaign is now {new.name}.'
 
@@ -150,7 +151,7 @@ class CampaignSwitcher(commands.Command):
 
             campaign.set_nick(message.author.id, arg)
             await message.author.edit(nick=arg)
-            self.db.add_campaign(campaign)
+            await self.db.add_campaign(campaign)
             return f'Set the nickname for {message.author.display_name} ' + \
                 f'in {campaign.name} to {arg}.'
         elif command == 'join':
@@ -158,23 +159,25 @@ class CampaignSwitcher(commands.Command):
                 return f'You are already in campaign {campaign.name}!'
 
             campaign.add_player(message.author.id)
-            self.db.add_campaign(campaign)
+            await self.db.add_campaign(campaign)
             return f'Added {message.author.display_name} to ' + \
                 f'{campaign.name}. Welcome to the party!'
         elif command == 'leave':
             campaign.remove_player(message.author.id)
-            self.db.add_campaign(campaign)
+            await self.db.add_campaign(campaign)
             return f'Removed {message.author.display_name} from ' + \
                 f'{campaign.name}.'
 
 
         if not (campaign.dm is None or message.author.id == campaign.dm):
+            if command == 'setnick' and message.mentions == []:
+                return 'Use `--dnd nick <nickname>` to set your own nickname.'
             return f'Only the DM can use the command {command}.'
 
         if command == 'day':
             if arg.lower() == 'none':
                 campaign.day = -1
-                self.db.add_campaign(campaign)
+                await self.db.add_campaign(campaign)
                 return f'Unset the session day for {campaign.name}.'
 
             try:
@@ -183,12 +186,12 @@ class CampaignSwitcher(commands.Command):
                 return f'{arg} is not a valid day of the week.'
 
             campaign.day = day
-            self.db.add_campaign(campaign)
+            await self.db.add_campaign(campaign)
             return f'I have updated the session day for {campaign.name}.'
         elif command == 'time':
             if arg.lower() == 'none':
                 campaign.time = -1
-                self.db.add_campaign(campaign)
+                await self.db.add_campaign(campaign)
                 return f'Unset the session time for {campaign.name}.'
 
             try:
@@ -197,19 +200,19 @@ class CampaignSwitcher(commands.Command):
                 return f'I couldn\'t parse "{arg}" as a time. {e}'
 
             campaign.time = time
-            self.db.add_campaign(campaign)
+            await self.db.add_campaign(campaign)
             return f'I have updated the session time for {campaign.name}.'
         elif command == 'notify':
             if campaign.channel == message.channel.id:
                 campaign.notify = False
                 campaign.channel = None
-                self.db.add_campaign(campaign)
+                await self.db.add_campaign(campaign)
 
                 return f'Notifications have been disabled for {campaign.name}.'
             else:
                 campaign.notify = True
                 campaign.channel = message.channel.id
-                self.db.add_campaign(campaign)
+                await self.db.add_campaign(campaign)
 
                 if campaign.day == -1 and campaign.time == -1:
                     reminder_string = ' Remember to set a day and time to ' + \
@@ -226,7 +229,7 @@ class CampaignSwitcher(commands.Command):
                 return f'Notifications for {campaign.name} ' + \
                     'will be sent in this channel.' + reminder_string
         elif command == 'delete':
-            self.db.delete_campaign(campaign)
+            await self.db.delete_campaign(campaign)
             del self.campaigns[server]
             return f'Deleted the campaign {campaign.name}.'
 
@@ -238,7 +241,7 @@ class CampaignSwitcher(commands.Command):
         if command == 'setdm':    
             campaign.dm = target.id
             await self.set_dm(message.guild)
-            self.db.add_campaign(campaign)
+            await self.db.add_campaign(campaign)
             return f'Set {target.display_name} as the DM for ' + \
                 f'{campaign.name}.'
         elif command == 'add':
@@ -247,7 +250,7 @@ class CampaignSwitcher(commands.Command):
                     f'{campaign.name}.' 
 
             campaign.add_player(target.id)
-            self.db.add_campaign(campaign)
+            await self.db.add_campaign(campaign)
             return f'Added {target.display_name} to ' + \
                 f'{campaign.name}.'
         elif command == 'remove':
@@ -256,7 +259,7 @@ class CampaignSwitcher(commands.Command):
                     f'{campaign.name}.'
 
             campaign.remove_player(target.id)
-            self.db.add_campaign(campaign)
+            await self.db.add_campaign(campaign)
             return f'Removed {target.display_name} from {campaign.name}.'
         elif command == 'setnick':
             if target.id not in campaign.players:
@@ -275,15 +278,15 @@ class CampaignSwitcher(commands.Command):
                 message.mentions[0].id, 
                 nick.strip()
             )
-            self.db.add_campaign(campaign)
+            await self.db.add_campaign(campaign)
             await self.update_nicknames(message.guild)
             return f'Updated the nickname of {target.display_name}.'
 
-    def get_active_campaign(self, server):
+    async def get_active_campaign(self, server):
         if server in self.campaigns:
             return self.campaigns[server]
         
-        campaign = self.db.get_active_campaign(server)
+        campaign = await self.db.get_active_campaign(server)
         if campaign is not None:
             campaign = Campaign.from_db_tup(campaign, server) 
             self.campaigns[server] = campaign
@@ -294,7 +297,7 @@ class CampaignSwitcher(commands.Command):
         # server: the Guild object of the relevant server
         missing_players = []
 
-        campaign = self.get_active_campaign(server.id)
+        campaign = await self.get_active_campaign(server.id)
         for p, n in zip(campaign.players, campaign.nicks):
             if not n:
                 continue
@@ -323,7 +326,7 @@ class CampaignSwitcher(commands.Command):
             if dm_role in member.roles:
                 await member.remove_roles(dm_role)
 
-        campaign = self.get_active_campaign(server.id)
+        campaign = await self.get_active_campaign(server.id)
         if not campaign.dm:
             return
 
@@ -337,15 +340,16 @@ class CampaignSwitcher(commands.Command):
         await self.set_dm(server)
         await self.update_nicknames(server)
 
-    def save_campaigns(self):
+    async def save_campaigns(self):
         for campaign in self.campaigns.values():
-            self.db.add_campaign(campaign)
+            await self.db.add_campaign(campaign)
 
     async def notify(self, client, period=60, delta=1800):
         await client.wait_until_ready()
 
         while not client.is_closed():
-            for name, channel, players in self.db.get_reminders(period, delta):
+            reminders = await self.db.get_reminders(period, delta)
+            for name, channel, players in reminders:
                 try:
                     mention_string = \
                         ' '.join([f'<@{p}>' for p in parse_player_string(players)])
