@@ -285,6 +285,9 @@ def get_rolls(string):
         else:
             qty = int(qty)
 
+        if qty == 0:
+            raise ValueError('I can\'t roll a zero sided die.')
+
         die = int(roll.group('die'))
 
         advstr = roll.group('advstr')
