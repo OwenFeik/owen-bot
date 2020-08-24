@@ -42,7 +42,7 @@ class Kick(commands.Command):
             return 'You can\'t kick people you aren\'t ' + \
                 'in a voice channel with!'
 
-        voice_members = len(channel.members)
+        voice_members = sum([1 if not m.bot else 0 for m in channel.members])
         if voice_members < 3:
             return 'Sorry, I don\'t kick people from voice channels ' + \
                 'with less than 3 members.'
