@@ -1,5 +1,4 @@
 import aiosqlite
-import asyncio
 import datetime
 import enum
 import random
@@ -20,6 +19,9 @@ class Database:
     async def make_connection(self, file):
         self.file = file
         self.connection = await aiosqlite.connect(self.file)
+        for command in self.startup_commands:
+            await self.execute(command, trans_type=TransTypes.COMMIT)
+        utilities.log_message('Established connection and set up database.')
 
     async def save(self):
         try:
