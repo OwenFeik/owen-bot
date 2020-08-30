@@ -214,14 +214,32 @@ class WordArt(Command):
         super().__init__(config)
         self.commands = ['--wa']
         self.default_emoji = config['wordart_emoji']
+        self.will_send = True
         
-    async def _handle(self, argument):
+    async def handle(self, message):
         self.delete_message = False
+        argument = message.content[len(self.commands[0]):].strip()
         if argument:
-            self.delete_message = True
-            return wordart.handle_wordart_request(argument, self.default_emoji)
-        return 'Usage: "--wa <message>" to create word art. ' + \
-            'Messages must be very short: around 6 characters.'
+            try:
+                await message.channel.send(
+                    wordart.handle_wordart_request(
+                        argument, 
+                        self.default_emoji
+                    )
+                )
+                self.delete_message = True
+            except discord.HTTPException as e:
+                utilities.log_message(f'Error attempting to send wordart: {e}')
+                await message.channel.send(
+                    'Ran into an error sending this wordart. The message was ' + \
+                    'probably too long, usually around 6 characters is the ' + \
+                    'maximum.'
+                )
+        else:
+            await message.channel.send(
+                'Usage: "--wa <message>" to create word art. ' + \
+                'Messages must be very short: around 6 characters.'
+            )
 
 class XKCD(Command):
     def __init__(self, config):
