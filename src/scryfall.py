@@ -216,14 +216,22 @@ def get_printing(query, ed):
     if 'status' in r and r['status'] == 404: #If card doesn't exist
         return False #We return a few data types to save on api calls
     elif len(r['data']) > 1: #If there are more than 1 matches
-        data = [r['data'][i]['name'] for i in range(0,len(r['data']))] #List of card names to print as suggestions
-        if len(data) > 5: #If there are more than 5 suggestions
-            random.shuffle(data)
-            data = data[0:5] #Pick 5 at random
-            data.sort()
+        names = [r['data'][i]['name'] for i in range(len(r['data']))]
+
+        try:
+            return Card.from_scryfall_response(
+                r['data'][[n.lower() for n in names].index(query.lower())]
+            ) # This will succeed if a card with the exact name of the query is found.
+        except ValueError:
+            pass
+
+        if len(names) > 5: #If there are more than 5 suggestions
+            random.shuffle(names)
+            names = names[0:5] #Pick 5 at random
+            names.sort()
         msg = f'I couldn\'t find {utilities.capitalise(query)} in ' + \
             f'{ed.upper()}. Maybe you meant:\n\n'
-        for sugg in data:
+        for sugg in names:
             msg += '\t' + sugg + '\n'
         return msg
     else:
