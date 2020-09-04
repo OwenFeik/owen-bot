@@ -133,7 +133,7 @@ class Bot():
                     await message.channel.send(embed=resp)
                 else:
                     utilities.log_message('Got strange type from command ' + \
-                        f'"{message.content}".')
+                        f'"{message.content}": {type(resp)}.')
                     await message.channel.send(
                         'Ran into an issue with that command.'
                     )
@@ -145,7 +145,7 @@ class Bot():
         if cmd.delete_message:
             try:
                 await message.delete()
-                utilities.log_message(f'Deleted command message.')
+                utilities.log_message('Deleted command message.')
             except discord.errors.Forbidden:
                 utilities.log_message('Couldn\'t delete command message; ' + \
                     'insufficient permissions.')

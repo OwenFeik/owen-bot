@@ -255,7 +255,7 @@ class XKCD_Database(Interface):
         comic = random.randint(newest - await self.xkcd_count(), newest)
         try:
             return self.interpret_xkcd(await database.execute(
-                f'SELECT id, name, uri, alt FROM xkcds WHERE id = ?;', 
+                'SELECT id, name, uri, alt FROM xkcds WHERE id = ?;', 
                 (str(comic),), 
                 TransTypes.GETONE
             ))

@@ -4,3 +4,4 @@
 _*
 *.db*
 .log
+*.backup

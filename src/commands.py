@@ -12,13 +12,13 @@ import wordart
 import xkcd
 
 class Command():
-    def __init__(self, config):
+    def __init__(self, _):
         self.commands = []
         self.delete_message = False
         self.will_send = False
         self.regex = None
 
-    async def _handle(self, argument):
+    async def _handle(self, _):
         return 'Not implemented.'
 
     async def handle(self, message):
@@ -173,7 +173,7 @@ class VaporWave(Command):
 
         argument = message.content[len(self.commands[0]):].strip()
         if not argument:
-            return f'Usage: "--vw <message>" to create ' + \
+            return 'Usage: "--vw <message>" to create ' + \
                 wordart.vaporwave('vaporwave') + ' text.'
 
         other_mentions = re.findall(r'<(@&|#)\d{16,}>', argument)
@@ -231,9 +231,9 @@ class WordArt(Command):
             except discord.HTTPException as e:
                 utilities.log_message(f'Error attempting to send wordart: {e}')
                 await message.channel.send(
-                    'Ran into an error sending this wordart. The message was ' + \
-                    'probably too long, usually around 6 characters is the ' + \
-                    'maximum.'
+                    'Ran into an error sending this wordart. The message ' + \
+                    'was probably too long, usually around 6 characters ' + \
+                    'is the maximum.'
                 )
         else:
             await message.channel.send(
