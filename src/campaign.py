@@ -142,11 +142,28 @@ class Members(CampaignCommand):
         self.needs_campaign = True
 
     async def _handle(self, guild, campaign, _arg, _target):
-        out = f'Members of campaign {campaign.name}:\n\t'
+        out = f'Members of campaign {campaign.name}'
+        
+        if campaign.day >= 0 and campaign.time >= 0:
+            hour = str(campaign.time // 3600)
+            minute = str(campaign.time % 3600 // 60)
+            while len(minute) < 2:
+                minute += '0'
+
+            out += ' (' + utilities.number_to_weekday(campaign.day) + \
+                f' at {hour}:{minute})'
+
+        out += ':\n\t'
+        
         if campaign.dm:
-            try: 
-                dm_name = guild.get_member(campaign.dm).display_name
-                out += f'DM: {dm_name if dm_name else ""}\n\t'
+            try:
+                out += f'DM: {guild.get_member(campaign.dm).name}'
+
+                if campaign.dm in campaign.players:
+                    nick = campaign.nicks[campaign.players.index(campaign.dm)]
+                    out += f' ({nick})' if nick else ''
+
+                out += '\n\t'
             except Exception as e:
                 utilities.log_message(f'Failed to add DM name: {e}')
         else:
@@ -155,9 +172,12 @@ class Members(CampaignCommand):
         if campaign.players:
             member_names = []
             for p, n in zip(campaign.players, campaign.nicks):
+                if p == campaign.dm:
+                    continue
+
                 try:
-                    name = guild.get_member(p).display_name
-                    name += (f' ({n})' if n else '') 
+                    name = guild.get_member(p).name
+                    name += f' ({n})' if n else ''
                     member_names.append(name)
                 except Exception as e:
                     utilities.log_message(f'Failed to add name: {e}')

@@ -73,6 +73,20 @@ def parse_weekday(string):
     except KeyError:
         raise ValueError('Not a valid day of the week.')
 
+def number_to_weekday(i):
+    try:
+        return {
+            0: 'Monday',
+            1: 'Tuesday',
+            2: 'Wednesday',
+            3: 'Thursday',
+            4: 'Friday',
+            5: 'Saturday',
+            6: 'Sunday'
+        }[i]
+    except KeyError:
+        raise ValueError(f'"{i}" is not a valid weekday.')
+
 def time_range_check(h = 0, m = 0, s = 0):
     message = 'Hours value must be in the range [0, 24].'
     try:
