@@ -6,7 +6,7 @@ import emoji
 
 def translate(string, replacement):
     """string: alpha string to translate. emoji: discord formatted emoji reference: i.e. <:emojiname:000000000000000000>"""
-    
+
     with open('resources/alphabet.json', 'r') as f:
         alphabet = json.load(f)
 
@@ -32,14 +32,25 @@ def handle_wordart_request(string, default_emoji):
     if character:
         character = character.group(0).strip()
         string = string.replace(character, '').strip()
+        return translate(string, character)
+
+    for i in range(len(string)):
+        if string[i] in emoji.UNICODE_EMOJI:
+            character = string[i]
+
+            # unicode variation characters; applied to some emojis.
+            if i < len(string) - 1 and 65024 <= ord(string[i + 1]) <= 65039:
+                variation = string[i + 1]
+                string = string.replace(variation, '').strip()
+            else:
+                variation = ''
+
+            string = string.replace(character, '').strip()
+            
+            character += variation
+            break
     else:
-        for c in string:
-            if c in emoji.UNICODE_EMOJI:
-                character = c
-                string = string.replace(c, '').strip()
-                break
-        else:
-            character = default_emoji
+        character = default_emoji
 
     return translate(string, character)
 
