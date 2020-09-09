@@ -87,7 +87,7 @@ def number_to_weekday(i):
     except KeyError:
         raise ValueError(f'"{i}" is not a valid weekday.')
 
-def time_range_check(h = 0, m = 0, s = 0):
+def time_range_check(h=0, m=0, s=0):
     message = 'Hours value must be in the range [0, 24].'
     try:
         assert 0 <= h <= 24

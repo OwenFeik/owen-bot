@@ -176,6 +176,13 @@ class Campaign_Database(Interface):
             TransTypes.GETONE
         )
 
+    async def suggest_campaign(self, name, server):
+        return await database.execute(
+            'SELECT name FROM campaigns WHERE name LIKE ? AND server = ?;',
+            (name, server),
+            TransTypes.GETONE
+        )
+
     async def get_active_campaign(self, server):
         return await database.execute(
             'SELECT name, dm, players, nicks, day, time, notify, channel \

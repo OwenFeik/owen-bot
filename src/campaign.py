@@ -328,6 +328,10 @@ class SetCampaign(CampaignCommand):
     async def _handle(self, guild, campaign, arg, _target):
         if campaign and campaign.name.lower() == arg.lower():
             return f'{campaign.name} is already the active campaign.'
+        elif arg == '':
+            return 'Usage: `--dnd campaign <campaign name>` to switch to ' + \
+                'a different campaign. To create a new campaign use ' + \
+                '`--dnd new <campaign name>`.'
 
         new = Campaign.from_db_tup(
             await self.meta.db.get_campaign(arg, guild.id),
@@ -335,7 +339,13 @@ class SetCampaign(CampaignCommand):
         )
 
         if new is None:
-            return f'No campaign named {arg} exists.'
+            msg = f'No campaign named {arg} exists.'
+            
+            sugg = await self.meta.db.suggest_campaign(f'%{arg}%', guild.id)
+            if sugg:
+                msg += f' Perhaps you meant "{sugg[0]}"?'
+
+            return msg
 
         if self.meta.campaigns.get(guild.id) is not None:
             await self.meta.db.add_campaign(self.meta.campaigns[guild.id])
