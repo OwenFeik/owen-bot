@@ -97,6 +97,10 @@ class Help(Command):
         if not config['xkcd']:
             del self.help_strings['xkcd']
 
+        self.help_strings['vw'] = self.help_strings['vaporwave']
+        self.help_strings['bl'] = self.help_strings['blackletter']
+        self.help_strings['wa'] = self.help_strings['wordart']
+
     async def _handle(self, argument):
         if argument in self.help_strings:
             return self.help_strings[argument]
@@ -223,6 +227,8 @@ class WordArt(Command):
         self.commands = ['--wa', '--wordart']
         self.default_emoji = config['wordart_emoji']
         self.will_send = True
+
+        wordart.load_wa_alphabet()
         
     async def handle(self, message):
         self.delete_message = False

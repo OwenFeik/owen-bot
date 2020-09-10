@@ -3,19 +3,24 @@ import re
 
 import discord
 import emoji
+import utilities
+
+wa_alphabet = {}
+def load_wa_alphabet():
+    try:
+        with open('resources/alphabet.json', 'r') as f:
+            wa_alphabet.update(json.load(f))
+    except FileNotFoundError:
+        utilities.log_message('Failed to load wordart alphabet.')
 
 def translate(string, replacement):
-    """string: alpha string to translate. emoji: discord formatted emoji reference: i.e. <:emojiname:000000000000000000>"""
-
-    with open('resources/alphabet.json', 'r') as f:
-        alphabet = json.load(f)
-
     letters = []
 
     for c in string.lower():
-        if not c in alphabet:
-            return f'Sorry, character "{c}" not available, only letters can be used.'
-        letters.append(alphabet[c])
+        if not c in wa_alphabet:
+            return f'Sorry, character "{c}" not available, ' + \
+                'only letters can be used.'
+        letters.append(wa_alphabet[c])
 
     output = ''
 
@@ -28,7 +33,8 @@ def translate(string, replacement):
     return output
 
 def handle_wordart_request(string, default_emoji):
-    character = re.search(r'<:[\w]+:[\d]{18}>', string) # Matches discord emojis (<:name:000000000000000000>)
+    # Matches discord emojis (<:name:000000000000000000>)
+    character = re.search(r'<:[\w]+:[\d]{18}>', string) 
     if character:
         character = character.group(0).strip()
         string = string.replace(character, '').strip()
@@ -61,7 +67,7 @@ def scrub_mentions(argument, mentions):
 
     discord_emoji = re.findall(r'<:[\w\W]+:\d{16,}>', argument)
     if discord_emoji:
-        raise ValueError('Sorry, Discord emotes can\'t be vaporwaved.')
+        raise ValueError('Sorry, Discord emotes can\'t be translated.')
 
     user_mentions = re.findall(r'<@!?\d{16,}>', argument)
     for m in user_mentions:
