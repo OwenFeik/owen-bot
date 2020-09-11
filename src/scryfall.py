@@ -94,7 +94,8 @@ class Card:
     def from_scryfall_response(card):
         if 'card_faces' in card:
             names = [card['card_faces'][i]['name'] for i in range(0,2)]
-            uris = [card['card_faces'][i]['image_uris']['normal'] for i in range(0,2)]
+            uris = [card['card_faces'][i]['image_uris']['normal'] \
+                for i in range(0, 2)]
         else:
             names = [card['name']]
             uris = [card['image_uris']['normal']]

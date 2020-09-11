@@ -117,10 +117,14 @@ class Leave(CampaignCommand):
         self.needs_campaign = True
 
     async def _handle(self, _guild, campaign, _arg, target):
-        campaign.remove_player(target.id)
-        await self.meta.db.add_campaign(campaign)
-        return f'Removed {target.display_name} from ' + \
-            f'{campaign.name}.'
+        worked = campaign.remove_player(target.id)
+        if worked:
+            await self.meta.db.add_campaign(campaign)
+            return f'Removed {target.display_name} from ' + \
+                f'{campaign.name}.'
+        else:
+            return f'{target.display_name} is not in ' + \
+                f'{campaign.name}.'
 
 class List(CampaignCommand):
     def __init__(self, config):
@@ -388,9 +392,12 @@ class Campaign():
         self.nicks.append(nick)
 
     def remove_player(self, player):
-        i = self.players.index(player)
-        self.nicks = self.nicks[:i] + self.nicks[i + 1:]
-        self.players.remove(player)
+        if player in self.players:
+            i = self.players.index(player)
+            self.nicks = self.nicks[:i] + self.nicks[i + 1:]
+            self.players.remove(player)
+            return True
+        return False
 
     def set_nick(self, player, nick):
         self.nicks[self.players.index(player)] = nick
