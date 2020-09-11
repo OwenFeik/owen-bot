@@ -17,6 +17,7 @@ import utilities
 class Bot():
     instructions = [
         commands.About,
+        commands.Blackletter,
         campaign.CampaignSwitcher,
         commands.Hello,
         commands.Help,

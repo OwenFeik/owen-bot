@@ -1,7 +1,6 @@
 import asyncio
 import difflib
 import random
-import re
 
 import discord
 
@@ -21,9 +20,13 @@ class Command():
     async def _handle(self, _):
         return 'Not implemented.'
 
+    def remove_command_string(self, text):
+        argument = text[max([len(c) for c in self.commands if \
+            text.startswith(c)]):].strip()
+        return argument
+
     async def handle(self, message):
-        argument = message.content[len(self.commands[0]):].strip()
-        return await self._handle(argument)
+        return await self._handle(self.remove_command_string(message.content))
 
 class About(Command):
     def __init__(self, config):
@@ -34,6 +37,27 @@ class About(Command):
         return 'Hi, I\'m Owen\'s bot! I can help you in a variety of ways.' + \
             ' Try "--all" to see what I can do, and message Owen if ' + \
             'anything is acting up.'
+
+class Blackletter(Command):
+    def __init__(self, config):
+        super().__init__(config)
+        self.commands = ['--bl', '--blackletter']
+
+    async def handle(self, message):
+        self.delete_message = False
+
+        argument = self.remove_command_string(message.content)
+        if not argument:
+            return 'Usage: "--bl <message>" to create ' + \
+                wordart.blackletter('blackletter') + ' text.'
+
+        try:
+            argument = wordart.scrub_mentions(argument, message.mentions)
+        except ValueError as e:
+            return str(e)
+
+        self.delete_message = True
+        return wordart.blackletter(argument)
 
 class Creeper(Command):
     def __init__(self, config):
@@ -72,6 +96,10 @@ class Help(Command):
             del self.help_strings['magic']
         if not config['xkcd']:
             del self.help_strings['xkcd']
+
+        self.help_strings['vw'] = self.help_strings['vaporwave']
+        self.help_strings['bl'] = self.help_strings['blackletter']
+        self.help_strings['wa'] = self.help_strings['wordart']
 
     async def _handle(self, argument):
         if argument in self.help_strings:
@@ -166,36 +194,20 @@ class Spell(Command):
 class VaporWave(Command):
     def __init__(self, config):
         super().__init__(config)
-        self.commands = ['--vw']
+        self.commands = ['--vw', '--vaporwave']
 
     async def handle(self, message):
         self.delete_message = False
 
-        argument = message.content[len(self.commands[0]):].strip()
+        argument = self.remove_command_string(message.content)
         if not argument:
             return 'Usage: "--vw <message>" to create ' + \
                 wordart.vaporwave('vaporwave') + ' text.'
 
-        other_mentions = re.findall(r'<(@&|#)\d{16,}>', argument)
-        if other_mentions:
-            return 'Sorry, I don\'t really like mentions.'
-
-        discord_emoji = re.findall(r'<:[\w\W]+:\d{16,}>', argument)
-        if discord_emoji:
-            return 'Sorry, Discord emotes can\'t be vaporwaved.'
-
-        user_mentions = re.findall(r'<@!?\d{16,}>', argument)
-        for m in user_mentions:
-            user_id = int(m[3:-1]) if m.startswith('<@!') else int(m[2:-1])
-            user = discord.utils.find(
-                lambda m, i=user_id: m.id == i,
-                message.mentions
-            )
-
-            if user:
-                argument = argument.replace(m, user.display_name)
-            else:
-                return 'Sorry, I don\'t really like mentions.'
+        try:
+            argument = wordart.scrub_mentions(argument, message.mentions)
+        except ValueError as e:
+            return str(e)
 
         self.delete_message = True
         return wordart.vaporwave(argument)
@@ -212,13 +224,15 @@ class Weeb(Command):
 class WordArt(Command):
     def __init__(self, config):
         super().__init__(config)
-        self.commands = ['--wa']
+        self.commands = ['--wa', '--wordart']
         self.default_emoji = config['wordart_emoji']
         self.will_send = True
+
+        wordart.load_wa_alphabet()
         
     async def handle(self, message):
         self.delete_message = False
-        argument = message.content[len(self.commands[0]):].strip()
+        argument = self.remove_command_string(message.content)
         if argument:
             try:
                 await message.channel.send(
