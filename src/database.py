@@ -255,10 +255,10 @@ class XKCD_Database(Interface):
         ))
         
     async def get_random_xkcd(self):
-        newest = await database.execute(
+        newest = (await database.execute(
             'SELECT max(id) FROM xkcds;', 
             trans_type=TransTypes.GETONE
-        )[0]
+        ))[0]
         comic = random.randint(newest - await self.xkcd_count(), newest)
         try:
             return self.interpret_xkcd(await database.execute(
