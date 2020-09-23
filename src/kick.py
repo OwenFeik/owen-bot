@@ -17,7 +17,7 @@ class Kick(commands.Command):
         self.scrub_cooldown()
         
         if not message.mentions:
-            return 'Usage: "--kick <mention>" e.g. "--kick @BadPerson".'
+            return 'Usage: `--kick <mention>` e.g. `--kick @BadPerson`.'
         if len(message.mentions) > 1:
             return 'I can only kick one person at a time!'
         target = message.mentions[0]

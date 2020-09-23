@@ -48,7 +48,7 @@ class Blackletter(Command):
 
         argument = self.remove_command_string(message.content)
         if not argument:
-            return 'Usage: "--bl <message>" to create ' + \
+            return 'Usage: `--bl <message>` to create ' + \
                 wordart.blackletter('blackletter') + ' text.'
 
         try:
@@ -188,7 +188,7 @@ class Spell(Command):
 
     async def _handle(self, argument):
         if argument == '':
-            return 'Usage: "--spell <spell name>".'
+            return 'Usage: `--spell <spell name>`.'
         return self.sb.handle_command(argument)
 
 class VaporWave(Command):
@@ -201,7 +201,7 @@ class VaporWave(Command):
 
         argument = self.remove_command_string(message.content)
         if not argument:
-            return 'Usage: "--vw <message>" to create ' + \
+            return 'Usage: `--vw <message>` to create ' + \
                 wordart.vaporwave('vaporwave') + ' text.'
 
         try:
@@ -251,7 +251,7 @@ class WordArt(Command):
                 )
         else:
             await message.channel.send(
-                'Usage: "--wa <message>" to create word art. ' + \
+                'Usage: `--wa <message>` to create word art. ' + \
                 'Messages must be very short: around 6 characters.'
             )
 

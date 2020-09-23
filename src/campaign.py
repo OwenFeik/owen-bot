@@ -250,9 +250,13 @@ class Nick(CampaignCommand):
                 return f'You are not in {campaign.name}, so I cannot set ' + \
                     'your nickname. Join with `--dnd join`.'
 
-        if not nick.isalnum():
-            return 'Only alphanumeric characters can be used in ' + \
-                f'nicknames. "{nick}" is inadmissable.'
+        if not re.sub(r'[ -]', '', nick).isalnum():
+            return 'Only alphanumeric characters, space and hyphens can be' + \
+                f' used in nicknames. "{nick}" is inadmissable.'
+        if not len(nick) <= 32:
+            return 'Discord nicknames must be 32 characters or less.'
+        if not len(nick) > 0:
+            return 'Usage: `--dnd nick <nickname>`.'
 
         if message.guild.owner and \
             target == message.guild.owner.id:
