@@ -261,8 +261,8 @@ class Nick(CampaignCommand):
         if message.guild.owner and \
             target.id == message.guild.owner.id:
             
-            return 'You are the guild owner ' + \
-                'which means I can\'t set your nickname.'
+            return f'{target.display_name} is the guild owner ' + \
+                'which means I can\'t set their nickname.'
         if not message.author.id in campaign.players:
             return 'You must join the campaign with `--dnd join` ' + \
                 'before you can set a nickname.'
