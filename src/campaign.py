@@ -259,7 +259,7 @@ class Nick(CampaignCommand):
             return 'Usage: `--dnd nick <nickname>`.'
 
         if message.guild.owner and \
-            target == message.guild.owner.id:
+            target.id == message.guild.owner.id:
             
             return 'You are the guild owner ' + \
                 'which means I can\'t set your nickname.'
@@ -270,7 +270,7 @@ class Nick(CampaignCommand):
         campaign.set_nick(target.id, nick)
         await target.edit(nick=nick)
         await self.meta.db.add_campaign(campaign)
-        return f'Set the nickname for {target.display_name} ' + \
+        return f'Set the nickname for {target.name} ' + \
             f'in {campaign.name} to {nick}.'
 
 class Notify(CampaignCommand):
