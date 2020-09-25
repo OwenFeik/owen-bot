@@ -285,7 +285,7 @@ class XKCD_Database(Interface):
         if data:
             return self.interpret_xkcd(data)
         else:
-            return self.get_xkcd('not available')
+            return await self.get_xkcd('not available')
 
     def interpret_xkcd(self, data):
         repair_string = lambda s: s.replace('&#39;',"'").replace('&quot;','"')

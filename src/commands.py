@@ -22,7 +22,7 @@ class Command():
 
     def remove_command_string(self, text):
         argument = text[max([len(c) for c in self.commands if \
-            text.startswith(c)]):].strip()
+            text.lower().startswith(c)]):].strip()
         return argument
 
     async def handle(self, message):
@@ -246,13 +246,13 @@ class WordArt(Command):
                 utilities.log_message(f'Error attempting to send wordart: {e}')
                 await message.channel.send(
                     'Ran into an error sending this wordart. The message ' + \
-                    'was probably too long, usually around 6 characters ' + \
+                    'was probably too long, usually around 4 characters ' + \
                     'is the maximum.'
                 )
         else:
             await message.channel.send(
                 'Usage: `--wa <message>` to create word art. ' + \
-                'Messages must be very short: around 6 characters.'
+                'Messages must be very short: around 4 characters.'
             )
 
 class XKCD(Command):
@@ -260,22 +260,12 @@ class XKCD(Command):
         assert config['xkcd']
         super().__init__(config)
         self.commands = ['--xkcd']
-        config['client'].loop.create_task(
-            self.scheduled_updates(
-                config['xkcd_interval'], 
-                config['client']
-            )
-        )
+
+        xkcd.init_db()
+        xkcd.start_db_thread(config['xkcd_interval'], config['client'])
 
     async def _handle(self, argument):
         if argument:
             return await xkcd.get_xkcd(argument)
-        return 'Use "--xkcd <comic name>" or "--xkcd <number>" to find an' + \
-            'xkcd comic, or "--xkcd random" for a random comic.'
-
-    async def scheduled_updates(self, period, client):
-        await client.wait_until_ready()
-
-        while not client.is_closed():
-            await xkcd.update_db()
-            await asyncio.sleep(period)
+        return 'Use `--xkcd <comic name>` or `--xkcd <number>` to find an' + \
+            'xkcd comic, or `--xkcd random` for a random comic.'
