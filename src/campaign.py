@@ -219,7 +219,12 @@ class Nick(CampaignCommand):
 
     async def handle(self, message):
         campaign = await self.meta.get_active_campaign(message.guild.id)
-        arg = re.sub(self.regex, '', message.content).strip()
+        arg = re.sub(
+            self.regex,
+            '',
+            message.content,
+            flags=re.IGNORECASE
+        ).strip()
 
         nick = arg
         if message.mentions:
