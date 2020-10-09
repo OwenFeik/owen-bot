@@ -92,7 +92,7 @@ class Card:
 
     @staticmethod
     def from_scryfall_response(card):
-        if 'card_faces' in card:
+        if 'card_faces' in card and 'image_uris' in card['card_faces'][0]:
             names = [card['card_faces'][i]['name'] for i in range(0,2)]
             uris = [card['card_faces'][i]['image_uris']['normal'] \
                 for i in range(0, 2)]
