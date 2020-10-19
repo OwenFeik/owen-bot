@@ -36,26 +36,7 @@ class RollCommand(commands.Command):
         string = string.replace(command, '', 1).strip()
 
         if 'stats' in string:
-            if string == 'stats':            
-                e = stats_embed(await self.db.get_rolls(user, server), mention)        
-                await channel.send(embed=e)
-            elif string == 'reset stats':
-                self.delete_message = False
-                await self.db.reset_rolls(user)
-                await channel.send(f'Your stored rolls have been deleted.')
-            elif string == 'reset server stats':
-                self.delete_message = False
-                if server == None:
-                    await channel.send('I don\'t track stats in DMs sorry.')
-                await self.db.reset_rolls(user, server)
-                await channel.send(
-                    f'Your stored rolls on {server.name} have been deleted.'
-                )
-            else:
-                self.delete_message = False
-                await channel.send(
-                    'I didn\'t understand that. Try "--help roll".'
-                )
+            await self.handle_stats(string, user, server, mention, channel)
             return
 
         try:
@@ -96,6 +77,43 @@ class RollCommand(commands.Command):
                 await channel.send('Ran into an error.')
                 utilities.log_message(f'Error sending roll: {e}')
                 return
+
+    async def handle_stats(self, string, user, server, mention, channel):
+        if string == 'stats':            
+            e = stats_embed(await self.db.get_rolls(user, server), mention)
+            await channel.send(embed=e)
+        elif string == 'campaign stats':
+            try:
+                rolls, campaign_name = await self.db.get_campaign_rolls(
+                    user,
+                    server
+                )
+            except ValueError:
+                self.delete_message = False
+                await channel.send(
+                    f'{mention} is not in an active campaign on this server.'
+                )
+                return
+
+            e = stats_embed(rolls, f'{mention} in {campaign_name}')
+            await channel.send(embed=e)
+        elif string == 'reset stats':
+            self.delete_message = False
+            await self.db.reset_rolls(user)
+            await channel.send('Your stored rolls have been deleted.')
+        elif string == 'reset server stats':
+            self.delete_message = False
+            if server == None:
+                await channel.send('I don\'t track stats in DMs sorry.')
+            await self.db.reset_rolls(user, server)
+            await channel.send(
+                f'Your stored rolls on {server.name} have been deleted.'
+            )
+        else:
+            self.delete_message = False
+            await channel.send(
+                'I didn\'t understand that. Try `--help roll`.'
+            )
 
     async def get_dm(self, members):
         for member in members:

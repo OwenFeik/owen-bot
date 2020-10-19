@@ -1,7 +1,9 @@
-import aiosqlite
 import datetime
 import enum
+import os
 import random
+
+import aiosqlite
 
 import utilities
 
@@ -11,14 +13,23 @@ class TransTypes(enum.Enum):
     COMMIT = enum.auto()
 
 class Database:
+    VERSION = 1
+
     def __init__(self):
         self.file = None
-        self.startup_commands = []
+        self.startup_commands = [
+            f'PRAGMA user_version = {Database.VERSION};'
+        ]
         self.connection = None
 
+    # Must be called after all desired interfaces are instantiated
+    # or startup commands will not be executed.
     async def make_connection(self, file):
         self.file = file
+        run_migration = os.path.isfile(file)
         self.connection = await aiosqlite.connect(self.file)
+        if run_migration:
+            await self.migrate()
         for command in self.startup_commands:
             await self.execute(command, trans_type=TransTypes.COMMIT)
         utilities.log_message('Established connection and set up database.')
@@ -49,6 +60,53 @@ class Database:
             utilities.log_message(f'Database error: {e}')
             utilities.log_message(f'Ocurred on command: {command}')
 
+    async def migrate(self):
+        from_version, = await self.execute(
+            'PRAGMA user_version;',
+            trans_type=TransTypes.GETONE
+        )
+
+        if from_version == Database.VERSION:
+            utilities.log_message('Database schema up to date!')
+        elif from_version == 0:
+            utilities.log_message(
+                f'Database at version 0: updating to {Database.VERSION}'
+            )
+            await self.execute('PRAGMA foreign_keys = OFF;')
+            await self.execute(
+                'CREATE TABLE _new_campaigns('
+                'id INTEGER PRIMARY KEY AUTOINCREMENT, '
+                'name TEXT COLLATE NOCASE, server INTEGER, '
+                'dm INTEGER, players TEXT, nicks TEXT, active INTEGER, '
+                'day INTEGER, time INTEGER, notify INTEGER, channel INTEGER, '
+                'FOREIGN KEY(dm) REFERENCES users(id), '
+                'FOREIGN KEY(server) REFERENCES servers(id), '
+                'UNIQUE(name, server));'
+            )
+            await self.execute(
+                'INSERT INTO _new_campaigns('
+                'name, server, dm, players, nicks, '
+                'active, day, time, notify, channel'
+                ') SELECT * FROM campaigns;'
+            )
+            await self.execute('DROP TABLE campaigns;')
+            await self.execute(
+                'ALTER TABLE _new_campaigns RENAME TO campaigns;'
+            )
+            await self.execute('PRAGMA foreign_keys = ON;')
+            await self.execute(
+                'ALTER TABLE rolls ADD COLUMN campaign INTEGER REFERENCES '
+                'campaigns(id) ON DELETE SET NULL;'
+            )
+            await self.save()
+            utilities.log_message('Database migration successful!')
+        else:
+            utilities.log_message(
+                'Don\'t know how to update database from version '
+                f'{from_version} to version {Database.VERSION}. Exiting.'
+            )
+            exit(1)
+
 database = Database()
 init_db = database.make_connection
 
@@ -61,8 +119,8 @@ class Discord_Database(Interface):
         super().__init__()
         for table in ['users', 'servers']:
             database.startup_commands.append(
-                f'CREATE TABLE IF NOT EXISTS {table}(\
-                id INTEGER PRIMARY KEY, name TEXT);',
+                f'CREATE TABLE IF NOT EXISTS {table}('
+                'id INTEGER PRIMARY KEY, name TEXT);',
             )
 
     async def insert_user(self, user):
@@ -79,18 +137,44 @@ class Roll_Database(Interface):
     def __init__(self):
         super().__init__()
         database.startup_commands.append(
-            'CREATE TABLE IF NOT EXISTS rolls(\
-            string TEXT, result TEXT, user INTEGER, server INTEGER, \
-            FOREIGN KEY(user) REFERENCES users(id), \
-            FOREIGN KEY(server) REFERENCES servers(id));'
+            'CREATE TABLE IF NOT EXISTS rolls('
+            'string TEXT, result TEXT, '
+            'user INTEGER, server INTEGER, campaign INTEGER, '
+            'FOREIGN KEY(user) REFERENCES users(id), '
+            'FOREIGN KEY(server) REFERENCES servers(id), '
+            'FOREIGN KEY(campaign) REFERENCES campaigns(id) ON DELETE SET NULL'
+            ');'
         )
 
+    async def get_active_campaign(self, user, server):
+        campaign = await database.execute(
+            'SELECT id, name FROM campaigns WHERE '
+            'server = ? AND active = 1 AND players LIKE ?;',
+            (
+                server,
+                f'%{user.id}%'
+            ),
+            TransTypes.GETONE
+        )
+        
+        try:
+            campaign_id, campaign_name = campaign
+        except TypeError:
+            raise ValueError('User is not in a campaign on server.')
+        
+        return campaign_id, campaign_name
+
     async def insert_roll(self, roll, user, server):
+        try:
+            campaign_id, _ = await self.get_active_campaign(user, server.id)
+        except ValueError:
+            campaign_id = None
+
         rolls_str = ','.join([str(r) for r in roll.rolls])
-        dice_str = roll.dice_str() 
-        data = (dice_str, rolls_str, user.id, server.id)
+        dice_str = roll.dice_str()
+        data = (dice_str, rolls_str, user.id, server.id, campaign_id)
         await database.execute(
-            'INSERT INTO rolls VALUES(?, ?, ?, ?)',
+            'INSERT INTO rolls VALUES(?, ?, ?, ?, ?);',
             data, 
             TransTypes.COMMIT
         )
@@ -102,6 +186,20 @@ class Roll_Database(Interface):
             id_tuple,
             TransTypes.GETALL
         )
+
+    async def get_campaign_rolls(self, user, server):
+        campaign_id, campaign_name = await self.get_active_campaign(user, server.id)
+
+        return await database.execute(
+            'SELECT string, result FROM rolls '
+            'WHERE user = ? AND server = ? AND campaign = ?;',
+            (
+                user.id,
+                server.id,
+                campaign_id
+            ),
+            TransTypes.GETALL
+        ), campaign_name
 
     async def reset_rolls(self, user, server=None):
         if server is not None:
@@ -117,22 +215,23 @@ class Campaign_Database(Interface):
     def __init__(self):
         super().__init__()
         database.startup_commands.append(
-            'CREATE TABLE IF NOT EXISTS campaigns(\
-            name TEXT COLLATE NOCASE, server INTEGER, \
-            dm INTEGER, players TEXT, nicks TEXT, active INTEGER, \
-            day INTEGER, time INTEGER, notify INTEGER, channel INTEGER, \
-            FOREIGN KEY(dm) REFERENCES users(id), \
-            FOREIGN KEY(server) REFERENCES servers(id), \
-            PRIMARY KEY(name, server));'
+            'CREATE TABLE IF NOT EXISTS campaigns('
+            'id INTEGER PRIMARY KEY AUTOINCREMENT, '
+            'name TEXT COLLATE NOCASE, server INTEGER, '
+            'dm INTEGER, players TEXT, nicks TEXT, active INTEGER, '
+            'day INTEGER, time INTEGER, notify INTEGER, channel INTEGER, '
+            'FOREIGN KEY(dm) REFERENCES users(id), '
+            'FOREIGN KEY(server) REFERENCES servers(id), '
+            'UNIQUE(name, server));'
         )
 
     async def set_active(self, campaign):
         await database.execute(
-            'UPDATE campaigns SET active = CASE \
-                WHEN name = ? AND server = ? THEN 1 \
-                WHEN name != ? AND server = ? THEN 0 \
-                WHEN server != ? THEN active \
-            END',
+            'UPDATE campaigns SET active = CASE\n'
+            '    WHEN name = ? AND server = ? THEN 1\n'
+            '    WHEN name != ? AND server = ? THEN 0\n'
+            '    WHEN server != ? THEN active\n'
+            'END;',
             (
                 campaign.name,
                 campaign.server,
@@ -145,7 +244,10 @@ class Campaign_Database(Interface):
 
     async def add_campaign(self, campaign, active=True):
         await database.execute(
-            'REPLACE INTO campaigns VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?);', 
+            'REPLACE INTO campaigns('
+            'name, server, dm, players, nicks, active, '
+            'day, time, notify, channel'
+            ') VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?);',
             (
                 campaign.name, 
                 campaign.server, 
@@ -170,8 +272,8 @@ class Campaign_Database(Interface):
 
     async def get_campaign(self, name, server):
         return await database.execute(
-            'SELECT name, dm, players, nicks, day, time, notify, channel \
-            FROM campaigns WHERE name = ? AND server = ?;',
+            'SELECT name, dm, players, nicks, day, time, notify, channel '
+            'FROM campaigns WHERE name = ? AND server = ?;',
             (name, server),
             TransTypes.GETONE
         )
@@ -185,8 +287,8 @@ class Campaign_Database(Interface):
 
     async def get_active_campaign(self, server):
         return await database.execute(
-            'SELECT name, dm, players, nicks, day, time, notify, channel \
-            FROM campaigns WHERE server = ? AND active = 1;',
+            'SELECT name, dm, players, nicks, day, time, notify, channel '
+            'FROM campaigns WHERE server = ? AND active = 1;',
             (server,),
             TransTypes.GETONE
         )
@@ -202,8 +304,8 @@ class Campaign_Database(Interface):
         now = datetime.datetime.now()
         notif_time = now.hour * 3600 + now.minute * 60 + now.second + delta 
         return await database.execute(
-            'SELECT name, channel, players FROM campaigns \
-            WHERE notify = 1 AND day = ? AND time - ? < ? AND time - ? > 0;',
+            'SELECT name, channel, players FROM campaigns '
+            'WHERE notify = 1 AND day = ? AND time - ? < ? AND time - ? > 0;',
             (
                 now.weekday(),
                 notif_time,
@@ -217,8 +319,8 @@ class XKCD_Database(Interface):
     def __init__(self):
         super().__init__()
         database.startup_commands.append(
-            'CREATE TABLE IF NOT EXISTS xkcds(\
-            id INTEGER PRIMARY KEY, name TEXT, uri TEXT, alt TEXT);',
+            'CREATE TABLE IF NOT EXISTS xkcds('
+            'id INTEGER PRIMARY KEY, name TEXT, uri TEXT, alt TEXT);',
         )
 
     async def xkcd_count(self):
