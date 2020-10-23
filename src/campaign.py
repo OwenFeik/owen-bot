@@ -466,7 +466,7 @@ def parse_player_string(players):
     return [int(p) for p in players.split(',')]
 
 class CampaignSwitcher(commands.Command):
-    instructions = [
+    INSTRUCTIONS = [
         Add,
         SetCampaign,
         Day,
@@ -482,6 +482,7 @@ class CampaignSwitcher(commands.Command):
         SetDM,
         Time
     ]
+    DM_COLOUR = discord.Colour.from_rgb(7, 104, 173)
 
     def __init__(self, config):
         assert config['dnd_campaign']
@@ -494,7 +495,7 @@ class CampaignSwitcher(commands.Command):
         config['client'].loop.create_task(self.notify(config['client']))
 
         self.options = {}
-        for i in self.instructions:
+        for i in CampaignSwitcher.INSTRUCTIONS:
             try:
                 option = i(config)
                 option.meta = self
@@ -581,13 +582,26 @@ class CampaignSwitcher(commands.Command):
         for p in missing_players:
             campaign.remove_player(p)
 
-    async def set_dm(self, server):
-        # server: the Guild object of the relevant server
-
+    async def get_dm_role(self, server):
         dm_role = discord.utils.find(
             lambda r: r.name == self.dm_role, 
             server.roles
         )
+
+        if dm_role is None:
+            dm_role = await server.create_role(
+                name=self.dm_role,
+                colour=self.DM_COLOUR,
+                hoist=False,
+                mentionable=True,
+                reason='Created by owen-bot for campaign functionality.'
+            )
+        
+        return dm_role
+
+    async def set_dm(self, server):
+        # server: the Guild object of the relevant server
+        dm_role = await self.get_dm_role(server)
 
         for member in server.members:
             if dm_role in member.roles:
@@ -631,8 +645,8 @@ class CampaignSwitcher(commands.Command):
                         f'{int(round(delta / 60, 0))} minutes.\n\n' + \
                         mention_string
                     )
-                except:
+                except Exception as e:
                     utilities.log_message('Ran into an issue sending ' + \
-                        f'notification for campaign {name}.')
+                        f'notification for campaign {name}: {e}')
                     
             await asyncio.sleep(period)
