@@ -126,10 +126,11 @@ class Query():
                 self.card = get_random_card()
         elif self.query == 'best card' or self.query == 'the best card':
             best_cards = [
-                'Faithless Looting'
+                'Faithless Looting',
                 'Kalonian Hydra',
                 'Mystic Remora',
-                'Smuggler\'s Copter'
+                'Smuggler\'s Copter',
+                'Grim Poppet'
             ]
             self.card = get_fuzzy(random.choice(best_cards))
         else:
@@ -165,6 +166,10 @@ class Query():
         elif self.msg:
             return self.msg
         else: #If we don't have a card or a message, there's a problem
+            utilities.log_message(
+                'Failed to find card while searching scryfall for '
+                f'"{self.query}".'
+            )
             return 'Oops, something went wrong when I was looking for ' + \
                 f'"{utilities.capitalise(self.query)}". Let Owen know!'
 
@@ -172,7 +177,7 @@ class Query():
 # Return query objects for each card found in the message
 def get_queries(message):
     queries = []
-    for q in re.findall(r'\[[^\[\]]+\]', message): # Grab all [card tags]
+    for q in re.findall(r'\[[^\[\]]+\]', message.lower()): # Grab all [card tags]
         q = q.replace('[','').replace(']','') # Remove the [] so we can work with the name and set 
         if q == '': # If this search is blank, just ignore it
             continue
@@ -206,7 +211,7 @@ def get_fuzzy(query):
     r = requests.get(request).json() #Get the response as a dictionary
     if 'status' in r and r['status'] == 404: #If no card found, return false
         return False
-    
+
     return Card.from_scryfall_response(r)
 
 #Get uri of a specific printing of card
