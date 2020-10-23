@@ -9,17 +9,19 @@ if sudo docker ps | grep -q "owen-bot"; then
 	sudo docker kill "owen-bot"
 fi
 
-if [ "$1" == "-u" ]; then
+MODE=$1
+
+if [ "$MODE" == "-u" ]; then
 	cp resources/config.json resources/config.json.backup
 	git stash
 	git pull
 	cp resources/config.json.backup resources/config.json
 
-	$1="-b"
+	MODE="-b"
 fi
 
-if [ "$1" == "-b" ]; then
-	yes | sudo docker system prune
+if [ "$MODE" == "-b" ]; then
+	sudo docker rm owen-bot
 	sudo docker build -t "owen-bot" .
 fi
 
