@@ -35,7 +35,7 @@ class About(Command):
     
     async def handle(self, _):
         return 'Hi, I\'m Owen\'s bot! I can help you in a variety of ways.' + \
-            ' Try "--all" to see what I can do, and message Owen if ' + \
+            ' Try `--all` to see what I can do, and message Owen if ' + \
             'anything is acting up.'
 
 class Blackletter(Command):
@@ -111,8 +111,8 @@ class Help(Command):
             1
         )
         if suggestion:
-            return f'I couldn\'t find {argument}.' + \
-                f'Did you mean "{suggestion[0]}"?'
+            return f'I couldn\'t find help for `{argument}`.' + \
+                f'Perhaps you meant `{suggestion[0]}`?'
         return f'I\'m afraid I can\'t help you with {argument}.'
 
 class JoJo(Command):

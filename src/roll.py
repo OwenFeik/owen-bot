@@ -176,7 +176,7 @@ class Roll():
 
     def desc_str(self, pad_to = 0):
         if (self.adv or self.disadv) and (self.qty == 2):
-            string = f"d{self.die}"
+            string = f'd{self.die}'
         else:
             string = f"{self.qty if self.qty > 1 else ''}d{self.die}"
         string += f"{'a' if self.adv else ''}{'d' if self.disadv else ''}"
@@ -192,17 +192,17 @@ class Roll():
 
     def dice_str(self):
         # Used for saving results in database
-        return f"{self.qty}d{self.die}"
+        return f'{self.qty}d{self.die}'
 
     def roll_str(self, pad_to = 0):
         string = ''
         if len(self.rolls) > 1:
-            string += f"\tRolls: {str(self.rolls)[1:-1]}"
-            string += f" \tTotal: {clean_number(self.total)}"
+            string += f'\tRolls: {str(self.rolls)[1:-1]}'
+            string += f' \tTotal: {clean_number(self.total)}'
         else:
-            string += f"\tRoll: {self.rolls[0]}"
+            string += f'\tRoll: {self.rolls[0]}'
             if self.modifiers:
-                string += f" \tTotal: {clean_number(self.total)}"
+                string += f' \tTotal: {clean_number(self.total)}'
 
         while len(string) < pad_to:
             string += ' '

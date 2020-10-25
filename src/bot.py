@@ -105,7 +105,7 @@ class Bot():
                     )
                 else:
                     await message.channel.send(
-                        f'Command "{cmd_str}" doesn\'t exist. Try `--all` ' + \
+                        f'Command `{cmd_str}` doesn\'t exist. Try `--all` ' + \
                         'to see a list of commands.'
                     )
                 return
