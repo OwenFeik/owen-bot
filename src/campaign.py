@@ -255,7 +255,7 @@ class Nick(CampaignCommand):
                 return f'You are not in {campaign.name}, so I cannot set ' + \
                     'your nickname. Join with `--dnd join`.'
 
-        if not re.sub(r'[ -]', '', nick).isalnum():
+        if re.match(r'^[ a-zA-Z0-9\-]+$', nick) is None:
             return 'Only alphanumeric characters, space and hyphens can be' + \
                 f' used in nicknames. "{nick}" is inadmissable.'
         if not len(nick) <= 32:
