@@ -5,6 +5,7 @@ import discord
 
 import commands
 import database
+import discord_helpers
 import utilities
 
 class CampaignCommand(commands.Command):
@@ -158,34 +159,39 @@ class Members(CampaignCommand):
                 f' at {hour}:{minute})'
 
         out += ':\n\t'
-        
+
+        dm_string = ''
         if campaign.dm:
             try:
-                out += f'DM: {guild.get_member(campaign.dm).name}'
+                dm_name = (
+                    await discord_helpers.get_member(guild, campaign.dm)
+                ).name
+                dm_string = 'DM: ' + dm_name
 
                 if campaign.dm in campaign.players:
                     nick = campaign.nicks[campaign.players.index(campaign.dm)]
-                    out += f' ({nick})' if nick else ''
+                    dm_string += f' ({nick})' if nick else ''
 
-                out += '\n\t'
             except Exception as e:
+                dm_string = ''
                 utilities.log_message(f'Failed to add DM name: {e}')
-        else:
-            out += 'No DM\n\t'
 
+        out += (dm_string if dm_string else 'No DM') + '\n\t' 
+
+        member_names = []
         if campaign.players:
-            member_names = []
             for p, n in zip(campaign.players, campaign.nicks):
                 if p == campaign.dm:
                     continue
 
                 try:
-                    name = guild.get_member(p).name
+                    name = (await discord_helpers.get_member(guild, p)).name
                     name += f' ({n})' if n else ''
                     member_names.append(name)
                 except Exception as e:
                     utilities.log_message(f'Failed to add name: {e}')
-            
+
+        if member_names:            
             out += '\n\t'.join(member_names)
         else:
             out += 'No players'
@@ -263,17 +269,28 @@ class Nick(CampaignCommand):
         if not len(nick) > 0:
             return 'Usage: `--dnd nick <nickname>`.'
 
-        if message.guild.owner and \
-            target.id == message.guild.owner.id:
-            
-            return f'{target.display_name} is the guild owner ' + \
-                'which means I can\'t set their nickname.'
         if not message.author.id in campaign.players:
             return 'You must join the campaign with `--dnd join` ' + \
                 'before you can set a nickname.'
+        if discord_helpers.is_guild_owner(message.guild, target.id):
+            if target.id == message.author.id:
+                return 'You are the server owner which means I can\'t ' \
+                    'set your nickname.'
+            else:
+                return f'{target.display_name} is the guild owner which ' \
+                    'means I can\'t set their nickname'
+
+        try:
+            await target.edit(nick=nick)
+        except discord.Forbidden as e:
+            utilities.log_message(
+                f'Failed to set nick of {target.display_name} in ' \
+                f'{message.guild.name} due to: {e}'
+            )
+            return 'I was unable to set your nickname. Either I lack the ' \
+                'permission to do so or you are the server owner.'
 
         campaign.set_nick(target.id, nick)
-        await target.edit(nick=nick)
         await self.meta.db.add_campaign(campaign)
         return f'Set the nickname for {target.name} ' + \
             f'in {campaign.name} to {nick}.'
@@ -561,26 +578,31 @@ class CampaignSwitcher(commands.Command):
 
         return campaign        
 
-    async def update_nicknames(self, server):
-        # server: the Guild object of the relevant server
-        missing_players = []
+    async def update_nicknames(self, guild):
+        # guild: the Guild object of the relevant server
+        # missing_players = []
 
-        campaign = await self.get_active_campaign(server.id)
+        campaign = await self.get_active_campaign(guild.id)
         for p, n in zip(campaign.players, campaign.nicks):
             if not n:
                 continue
 
-            member = server.get_member(p)
+            member = await discord_helpers.get_member(guild, p)
             if not member:
-                missing_players.append(p)
+                # missing_players.append(p)
                 continue
 
-            if member.nick != n and p != server.owner.id:
+            if member.nick != n and not \
+                discord_helpers.is_guild_owner(guild, p):
+                
                 await member.edit(nick=n)
 
+        # commenting this for now because fetch/get_member seems
+        # somewhat unreliable.
+
         # remove players who have left the server
-        for p in missing_players:
-            campaign.remove_player(p)
+        # for p in missing_players:
+        #     campaign.remove_player(p)
 
     async def get_dm_role(self, server):
         dm_role = discord.utils.find(
@@ -599,22 +621,28 @@ class CampaignSwitcher(commands.Command):
         
         return dm_role
 
-    async def set_dm(self, server):
-        # server: the Guild object of the relevant server
-        dm_role = await self.get_dm_role(server)
+    async def set_dm(self, guild):
+        # guild: the Guild object of the relevant server
+        dm_role = await self.get_dm_role(guild)
 
-        for member in server.members:
+        campaign = await self.get_active_campaign(guild.id)
+
+        for player in campaign.players:
+            member = await discord_helpers.get_member(guild, player)
             if dm_role in member.roles:
                 await member.remove_roles(dm_role)
 
-        campaign = await self.get_active_campaign(server.id)
         if not campaign.dm:
             return
 
         try:
-            await server.get_member(campaign.dm).add_roles(dm_role)
-        except AttributeError: # dm has left the server
-            campaign.dm = None
+            await discord_helpers.get_member(
+                guild,
+                campaign.dm
+            ).add_roles(dm_role)
+        except AttributeError: 
+            # didn't find dm for some reason
+            pass
 
     async def apply_campaign(self, server):
         # server: the Guild object of the relevant server
