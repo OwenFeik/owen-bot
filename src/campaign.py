@@ -222,6 +222,7 @@ class Nick(CampaignCommand):
         self.needs_campaign = True
 
         self.regex = f'^--dnd ({"|".join(self.commands)})'
+        self.nick_regex = re.compile(r'^[\w\-]{1,32}$')
 
     async def handle(self, message):
         campaign = await self.meta.get_active_campaign(message.guild.id)
@@ -229,20 +230,21 @@ class Nick(CampaignCommand):
             self.regex,
             '',
             message.content,
+            count=1,
             flags=re.IGNORECASE
         ).strip()
 
         nick = arg
         if message.mentions:
             if len(message.mentions) > 1:
-                return 'This command requires a single mention. e.g. ' + \
+                return 'This command requires a single mention. e.g. ' \
                 '`--dnd setnick <mention> <name>`.'
 
             target = message.mentions[0]
 
             if not target.id in campaign.players:
-                return f'{target.display_name} is not in {campaign.name} ' + \
-                    'so I cannot set their nickname. The DM can add them ' + \
+                return f'{target.display_name} is not in {campaign.name} ' \
+                    'so I cannot set their nickname. The DM can add them ' \
                     '`--dnd add <mention>` or they can join with `--dnd join`.'
 
             if message.author.id in [campaign.dm, target.id] \
@@ -258,19 +260,18 @@ class Nick(CampaignCommand):
             target = message.author
 
             if not target.id in campaign.players:
-                return f'You are not in {campaign.name}, so I cannot set ' + \
+                return f'You are not in {campaign.name}, so I cannot set ' \
                     'your nickname. Join with `--dnd join`.'
-
-        if re.match(r'^[ a-zA-Z0-9\-]+$', nick) is None:
-            return 'Only alphanumeric characters, space and hyphens can be' + \
-                f' used in nicknames. "{nick}" is inadmissable.'
-        if not len(nick) <= 32:
-            return 'Discord nicknames must be 32 characters or less.'
-        if not len(nick) > 0:
-            return 'Usage: `--dnd nick <nickname>`.'
+        
+        if len(nick) == 0:
+            return 'Usage: `--dnd nick <nickname>` or ' \
+                '`--dnd setnick <mention> <nickname>`.'
+        if self.nick_regex.match(nick) is None:
+            return 'A nickname must be 1-32 non-special characters. ' \
+                f'"{nick}" is inadmissable.'
 
         if not message.author.id in campaign.players:
-            return 'You must join the campaign with `--dnd join` ' + \
+            return 'You must join the campaign with `--dnd join` ' \
                 'before you can set a nickname.'
         if discord_helpers.is_guild_owner(message.guild, target.id):
             if target.id == message.author.id:
@@ -292,7 +293,7 @@ class Nick(CampaignCommand):
 
         campaign.set_nick(target.id, nick)
         await self.meta.db.add_campaign(campaign)
-        return f'Set the nickname for {target.name} ' + \
+        return f'Set the nickname for {target.name} ' \
             f'in {campaign.name} to {nick}.'
 
 class Notify(CampaignCommand):
