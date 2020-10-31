@@ -636,13 +636,14 @@ class CampaignSwitcher(commands.Command):
             return
 
         try:
-            await discord_helpers.get_member(
-                guild,
-                campaign.dm
-            ).add_roles(dm_role)
-        except AttributeError: 
+            dm = await discord_helpers.get_member(guild, campaign.dm)
+            await dm.add_roles(dm_role)
+        except AttributeError as e:
             # didn't find dm for some reason
-            pass
+            utilities.log_message(
+                f'Failed to find DM for campaign {campaign.name} in ' \
+                f'{guild.name}.'
+            )
 
     async def apply_campaign(self, server):
         # server: the Guild object of the relevant server

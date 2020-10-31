@@ -166,8 +166,11 @@ class Bot():
             utilities.log_message(message.author.display_name + \
                 f' sent an attachment to {guild_string}.')
 
+intents = discord.Intents.default()
+intents.members = True
+
 loop = asyncio.get_event_loop()
-client = discord.Client(loop=loop)
+client = discord.Client(loop=loop, intents=intents)
 bot = Bot(client, loop=loop)
 
 @client.event
