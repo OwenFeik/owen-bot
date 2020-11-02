@@ -71,7 +71,7 @@ class Bot():
         client.run(self.token)
 
     async def handle_command(self, message):
-        if message.author == client.user:
+        if message.author == client.user or message.author.bot:
             return
 
         if message.guild is not None:
