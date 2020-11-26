@@ -9,7 +9,7 @@
     "dnd_campaign": true,
     "spellbook_url": "https://raw.githubusercontent.com/OwenFeik/spells/master/resources/spells.json",
     "creeper": true,
-    "token": "NzUxMzM3NzQxMjE1ODU4NzI5.X1HnzA.8QJO02tqz1JN_9nkm38OlrqY1Uc",
+    "token": "Your discord authtoken here.",
     "db_file": "resources/bot.db",
     "dm_role": "DM",
     "mcserv": false,
