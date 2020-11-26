@@ -3,12 +3,16 @@ import time
 import discord
 
 import commands
+import utilities
 
 class Kick(commands.Command):
+    THUMBNAIL_URL = 'https://i.imgur.com/9gEz9y4.jpg'
+
     def __init__(self, config):
         super().__init__(config)
         self.commands = ['--kick']
         self.interval = config['kick_interval']
+        self.limit_channel = config['kick_limit_channel']
         self.votes = []
         self.cooldown = []
 
@@ -23,28 +27,28 @@ class Kick(commands.Command):
         target = message.mentions[0]
 
         if type(target) != discord.Member:
-            return 'Sorry, I can\'t find voice information for ' + \
+            return 'Sorry, I can\'t find voice information for ' \
                 f'{target.display_name}.'
 
         if self.on_cooldown(target):
-            return f'{target.display_name} has been kicked too recently. ' + \
-                'I only kick people at most once every '+ \
+            return f'{target.display_name} has been kicked too recently. ' \
+                'I only kick people at most once every ' \
                 f'{self.interval // 60} minutes.'
 
         if target.voice is None:
             return f'{target.display_name} isn\'t in a voice channel.'
         if message.author.voice is None:
-            return 'You can\'t kick people you aren\'t ' + \
+            return 'You can\'t kick people you aren\'t ' \
                 'in a voice channel with!'
 
         channel = target.voice.channel
         if channel is None or channel != message.author.voice.channel:
-            return 'You can\'t kick people you aren\'t ' + \
+            return 'You can\'t kick people you aren\'t ' \
                 'in a voice channel with!'
 
         voice_members = sum([1 if not m.bot else 0 for m in channel.members])
         if voice_members < 3:
-            return 'Sorry, I don\'t kick people from voice channels ' + \
+            return 'Sorry, I don\'t kick people from voice channels ' \
                 'with less than 3 members.'
         required_votes = int(voice_members / 2 + 1)
 
@@ -53,15 +57,29 @@ class Kick(commands.Command):
 
         if vote_count >= required_votes:
             try:
-                await target.move_to(None, 
-                    reason='Democracy is a beautiful thing.')
+                await target.move_to(
+                    None, 
+                    reason='Democracy is a beautiful thing.'
+                )
                 self.cooldown.append((target, time.time()))
             except discord.Forbidden:
                 return 'Tragically, I don\'t have permission to do that.'
             
+            if self.limit_channel:
+                try:
+                    await channel.edit(
+                        reason='Prevent kicked user rejoining.',
+                        user_limit=voice_members - 1
+                    )
+                except discord.Forbidden:
+                    utilities.log_message('Failed to set member limit.')
+
             self.scrub_votes(target)
-            return 'The council has spoken. ' + \
-                f'{target.mention} has been disconnected.'
+            return discord.Embed(
+                title='User kicked.',
+                description=f'The council has spoken. {target.mention} has'
+                    ' been disconnected.'
+            ).set_thumbnail(url=Kick.THUMBNAIL_URL)
         else:
             needed_votes = required_votes - vote_count
             return f'Vote received! {needed_votes} more votes required.'            
@@ -104,7 +122,7 @@ class Vote():
         self.created = time.time()
 
     def __repr__(self):
-        return f'<Vote to kick {self.target} at {self.created}' + \
+        return f'<Vote to kick {self.target} at {self.created}' \
             f' from {self.sender} in {self.channel}>'
 
     def redundant(self, other):

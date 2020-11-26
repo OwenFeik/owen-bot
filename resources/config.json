@@ -1,6 +1,7 @@
 {
     "kick": true,
     "kick_interval": 300,
+    "kick_limit_channel": true,
     "xkcd": true,
     "xkcd_interval": 1800,
     "scryfall": true,
@@ -8,7 +9,7 @@
     "dnd_campaign": true,
     "spellbook_url": "https://raw.githubusercontent.com/OwenFeik/spells/master/resources/spells.json",
     "creeper": true,
-    "token": "Your discord authtoken here.",
+    "token": "NzUxMzM3NzQxMjE1ODU4NzI5.X1HnzA.8QJO02tqz1JN_9nkm38OlrqY1Uc",
     "db_file": "resources/bot.db",
     "dm_role": "DM",
     "mcserv": false,
