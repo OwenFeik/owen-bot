@@ -121,7 +121,7 @@ class Query():
                     self.card = found
                 else: # Returns false if set doesn't exist
                     self.msg = \
-                        f'I\'m afraid I couldn\'t find edition \'{self.ed}\'.'
+                        f'I\'m afraid I couldn\'t find edition "{self.ed}".'
             else:
                 self.card = get_random_card()
         elif self.query == 'best card' or self.query == 'the best card':
@@ -177,25 +177,15 @@ class Query():
 # Return query objects for each card found in the message
 def get_queries(message):
     queries = []
-    for q in re.findall(r'\[[^\[\]]+\]', message.lower()): # Grab all [card tags]
-        q = q.replace('[','').replace(']','') # Remove the [] so we can work with the name and set 
-        if q == '': # If this search is blank, just ignore it
-            continue
-        elif '|' in q: # If it has a set filter
-            if q.count('|') > 1: # Only 1 set filter allowed
-                queries.append(Query(msg='Multiple sets specified, ' + \
-                    'when only one is allowed. Please try again.'))
-            else:
-                q = q.split('|') # Divide into name (q[0]) and set (q[1])
-                if not '' in q: # If we have both a name and a set
-                    queries.append(Query(q[0].strip(), q[1].strip()))
-                else:
-                    if q[0] == '': # If we only have a set grab a random card from that set
-                        queries.append(Query('random', q[1]))
-                    else: # If we have no set, just search for the card
-                        queries.append(Query(q[0]))
-        else:
-            queries.append(Query(q)) # Everything is normal, just query for the name
+    message = re.sub(r'(?<!\\)`.*(?<!\\)`', '', message)
+    for q in re.finditer(
+        r'\[(?P<name>[\w ,.:!?&\'\/\-\"\(\)]+)(\|(?P<ed>[a-z0-9 \-]+))?\]',
+        message.lower()
+    ):
+        name = q.group('name')
+        ed = q.group('ed')
+
+        queries.append(Query(name, ed))
 
     return queries                    
 
@@ -235,8 +225,8 @@ def get_printing(query, ed):
             random.shuffle(names)
             names = names[0:5] #Pick 5 at random
             names.sort()
-        msg = f'I couldn\'t find {utilities.capitalise(query)} in ' + \
-            f'{ed.upper()}. Maybe you meant:\n\n'
+        msg = f'I couldn\'t find "{utilities.capitalise(query)}" in ' + \
+            f'"{ed.upper()}". Maybe you meant:\n\n'
         for sugg in names:
             msg += '\t' + sugg + '\n'
         return msg

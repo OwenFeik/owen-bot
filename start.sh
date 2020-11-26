@@ -4,6 +4,11 @@ cd "$(dirname "$0")"
 
 touch resources/.log
 
+systemctl is-active --quiet docker
+if [ $? != "0" ]; then
+	systemctl start docker
+fi
+
 if sudo docker ps | grep -q "owen-bot"; then
 	sudo docker logs owen-bot &>> resources/.log
 	sudo docker kill "owen-bot"

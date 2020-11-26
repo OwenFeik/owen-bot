@@ -71,7 +71,7 @@ class Bot():
         client.run(self.token)
 
     async def handle_command(self, message):
-        if message.author == client.user:
+        if message.author == client.user or message.author.bot:
             return
 
         if message.guild is not None:
@@ -166,8 +166,11 @@ class Bot():
             utilities.log_message(message.author.display_name + \
                 f' sent an attachment to {guild_string}.')
 
+intents = discord.Intents.default()
+intents.members = True
+
 loop = asyncio.get_event_loop()
-client = discord.Client(loop=loop)
+client = discord.Client(loop=loop, intents=intents)
 bot = Bot(client, loop=loop)
 
 @client.event
