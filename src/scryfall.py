@@ -66,27 +66,27 @@ class Card:
                 )
 
             embeds = [discord.Embed(
-                title = self.name, 
-                description = self.price, 
-                colour = colour
-            ).set_thumbnail(url = self.uri)]
+                title=self.name, 
+                description=self.price, 
+                colour=colour
+            ).set_thumbnail(url=self.uri)]
 
             if self.dfc:
                 embeds.append(discord.Embed(
-                    title = self.back_name, 
-                    colour = colour
-                ).set_thumbnail(url = self.back_uri))
+                    title=self.back_name, 
+                    colour=colour
+                ).set_thumbnail(url=self.back_uri))
             return embeds
         else:
             embeds = [discord.Embed(
-                title = self.name, 
-                description = self.price
-            ).set_thumbnail(url = self.uri)]
+                title=self.name, 
+                description=self.price
+            ).set_thumbnail(url=self.uri)]
             
             if self.dfc:
                 embeds.append(discord.Embed(
-                    title = self.back_name
-                ).set_thumbnail(url = self.back_uri))
+                    title=self.back_name
+                ).set_thumbnail(url=self.back_uri))
             
             return embeds
 
@@ -183,7 +183,7 @@ def get_queries(message):
             continue
         elif '|' in q: # If it has a set filter
             if q.count('|') > 1: # Only 1 set filter allowed
-                queries.append(Query(msg = 'Multiple sets specified, ' + \
+                queries.append(Query(msg='Multiple sets specified, ' + \
                     'when only one is allowed. Please try again.'))
             else:
                 q = q.split('|') # Divide into name (q[0]) and set (q[1])

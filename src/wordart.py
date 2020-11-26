@@ -26,7 +26,8 @@ def translate(string, replacement):
 
     for line in range(5):
         for letter in letters:
-            output += letter[line].replace(' ', '      ').replace('?', replacement)
+            output += \
+                letter[line].replace(' ', '      ').replace('?', replacement)
             output += '    '
         output += '\n'
 
