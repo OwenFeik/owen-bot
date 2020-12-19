@@ -7,165 +7,164 @@ import discord
 import utilities
 
 class Card:
-    colours = {
-        'W': (248, 231, 185),
-        'U': (14, 104, 171),
-        'B': (21, 11, 0),
-        'R': (211, 32, 42),
-        'G': (0, 115, 62),
-        'M': (199, 161, 100),
-        'C': (209, 213, 214)
+    EMBED_COLOURS = {
+        'W': discord.Colour.from_rgb(248, 231, 185),
+        'U': discord.Colour.from_rgb(14, 104, 171),
+        'B': discord.Colour.from_rgb(21, 11, 0),
+        'R': discord.Colour.from_rgb(211, 32, 42),
+        'G': discord.Colour.from_rgb(0, 115, 62),
+        'M': discord.Colour.from_rgb(199, 161, 100),
+        'C': discord.Colour.from_rgb(209, 213, 214)
     }
 
-    def __init__(self, names, uris, price, colour_id=None):
-        self.names = names
-        self.uris = uris
-        if len(self.uris) > 1:
-            self.dfc = True
+    def __init__(self, name, uri, price, colour_id):
+        self.name = name
+        self.uri = uri
+        self.price = price
+
+        self.colour_id = colour_id if colour_id else []
+
+    def get_embed_colour(self):
+        if len(self.colour_id) > 1:
+            return Card.EMBED_COLOURS['M']
+        elif len(self.colour_id) == 0:
+            return Card.EMBED_COLOURS['C']
         else:
-            self.dfc = False
-        if price:
-            self.price = '$' + price
-        else:
-            self.price = 'Price N/A'
+            return Card.EMBED_COLOURS[self.colour_id[0]]
 
-        self.colour_id = colour_id
-
-    @property
-    def name(self):
-        return self.names[0]
-    
-    @property
-    def uri(self):
-        return self.uris[0]
-
-    @property
-    def back_uri(self):
-        if self.dfc:
-            return self.uris[1]
-        else:
-            return False
-            
-    @property
-    def back_name(self):
-        if self.dfc:
-            return self.names[1]
-        else:
-            return False
-
-    @property
-    def embed(self):
-        if self.colour_id:
-            if len(self.colour_id) > 1:
-                colour = discord.Colour.from_rgb(*self.colours['M'])
-            elif len(self.colour_id) < 1:
-                colour = discord.Colour.from_rgb(*self.colours['C'])
-            else:
-                colour = discord.Colour.from_rgb(
-                    *self.colours[self.colour_id[0]]
-                )
-
-            embeds = [discord.Embed(
+    def get_embeds(self):
+        return [
+            discord.Embed(
                 title=self.name, 
                 description=self.price, 
-                colour=colour
-            ).set_thumbnail(url=self.uri)]
+                colour=self.get_embed_colour()
+            ).set_thumbnail(url=self.uri)
+        ]
 
-            if self.dfc:
-                embeds.append(discord.Embed(
-                    title=self.back_name, 
-                    colour=colour
-                ).set_thumbnail(url=self.back_uri))
-            return embeds
-        else:
-            embeds = [discord.Embed(
-                title=self.name, 
-                description=self.price
-            ).set_thumbnail(url=self.uri)]
-            
-            if self.dfc:
-                embeds.append(discord.Embed(
-                    title=self.back_name
-                ).set_thumbnail(url=self.back_uri))
-            
-            return embeds
+class DoubleFacedCard(Card):
+    def __init__(self, names, uris, price, colour_id):
+        super().__init__(names[0], uris[0], price, colour_id)
 
-    @staticmethod
-    def from_scryfall_response(card):
-        if 'card_faces' in card and 'image_uris' in card['card_faces'][0]:
-            names = [card['card_faces'][i]['name'] for i in range(0,2)]
-            uris = [card['card_faces'][i]['image_uris']['normal'] \
+        self.back_name = names[1]
+        self.back_uri = names[1]
+
+    def get_embeds(self):
+        return [
+            discord.Embed(
+                title=self.name,
+                description=self.price,
+                colour=self.get_embed_colour()
+            ).set_thumbnail(url=self.uri),
+            discord.Embed(
+                title=self.back_name,
+                colour=self.get_embed_colour()
+            ).set_thumbnail(url=self.uri)
+        ]
+
+def get_price_string(data):
+    price = data['prices']['usd']
+    if price is None:
+        price = data['prices']['usd_foil']
+        if price is None:
+            return 'Price N/A'
+        return f'${price} (foil)'
+    return f'${price}'
+
+def card_from_scryfall_response(data):
+        price = get_price_string(data)
+        colour_id = data['color_identity']
+
+        if 'card_faces' in data and 'image_uris' in data['card_faces'][0]:
+            names = [data['card_faces'][i]['name'] for i in range(0,2)]
+            uris = [data['card_faces'][i]['image_uris']['normal'] \
                 for i in range(0, 2)]
+            return DoubleFacedCard(names, uris, price, colour_id)
         else:
-            names = [card['name']]
-            uris = [card['image_uris']['normal']]
+            name = data['name']
+            uri = data['image_uris']['normal']
+            return Card(name, uri, price, colour_id)
 
-        price = card.get('prices').get('usd')
-        colour_id = card['color_identity']
+class ScryfallRequest():
+    BASE = 'https://api.scryfall.com/cards/'
+    MODES = {
+        'random': 'random',
+        'random_ed': 'random?q=e%3D{}',
+        'name': 'search?q={}',
+        'name_ed': 'search?q=e%3D{}+{}',
+        'fuzzy': 'named?fuzzy={}',
+    }
+    BEST_CARDS = [
+        'Faithless Looting',
+        'Kalonian Hydra',
+        'Mystic Remora',
+        'Smuggler\'s Copter',
+        'Niv-Mizzet Reborn'
+    ]
 
-        return Card(names, uris, price, colour_id)
-
-# A query object allows the bot to prearrange api calls and then execute them as necessary
-class Query():
-    def __init__(self, query=None, ed=None, msg=None):
+    def __init__(self, query, ed):
         self.query = query
         self.ed = ed
-        self.msg = msg
-        self.card = None
+        self.result = None
+
+    def perform_request(self, url, failure_message):
+        self.result = failure_message
+
+        resp = requests.get(url).json()
+        if resp.get('status') == 404:
+            return self.result
+
+        data = resp.get('data')
+
+
+    def get_random_card(self):
+        if self.ed:
+            return self.perform_request(
+                ScryfallRequest.MODES['random_ed'].format(self.ed),
+                f'I couldn\'t find edition "{self.ed}".'
+            )
+        return self.perform_request(
+            ScryfallRequest.MODES['random'],
+            'Something went wrong and I failed to find a random card.'
+        )
+    
+    def get_best_card(self):
+        return self.perform_request(
+            ScryfallRequest.MODES['fuzzy'].format(
+                random.choice(ScryfallRequest.BEST_CARDS)
+            ),
+            'Something went wrong and I failed to find the best card.'
+        )
+
+    def get_card_edition(self):
+        return self.perform_request(
+            ScryfallRequest.MODES['name_ed'].format(self.ed, self.query),
+            f'I\'m afraid I couldn\'t find "{self.query}" in "{self.ed}".'
+        )
+
+    def get_card(self):
+        return self.perform_request(
+            ScryfallRequest.MODES['fuzzy'].format(self.query),
+            f'I\'m afraid I couldn\'t find "{self.query}".'
+        )
 
     def resolve(self):
         if self.query == 'random':
-            if self.ed:
-                found = get_random_from_set(self.ed)
-                if found:
-                    self.card = found
-                else: # Returns false if set doesn't exist
-                    self.msg = \
-                        f'I\'m afraid I couldn\'t find edition "{self.ed}".'
-            else:
-                self.card = get_random_card()
-        elif self.query == 'best card' or self.query == 'the best card':
-            best_cards = [
-                'Faithless Looting',
-                'Kalonian Hydra',
-                'Mystic Remora',
-                'Smuggler\'s Copter',
-                'Grim Poppet'
-            ]
-            self.card = get_fuzzy(random.choice(best_cards))
+            self.get_random_card()
+        elif self.query in ['best card', 'the best card']:
+            self.get_best_card()
+        elif self.ed:
+            self.get_card_edition()
         else:
-            if self.ed: # If the query specified an edition
-                found = get_printing(self.query, self.ed)
-                if found: # Found is either False, meaning we found nothing
-                    if type(found) == str: # str meaning we found some alternatives
-                        self.msg = found
-                    else: # Or a Card meaning we found the card
-                        self.card = found
-                else: # We found nothing
-                    self.msg = 'I\'m afraid I couldn\'t find ' + \
-                        f'"{utilities.capitalise(self.query)}" in "{self.ed}".'
-            else:
-                found = get_fuzzy(self.query)
-                if found:
-                    self.card = found
-                else: # If we didn't find the card, look for alternatives
-                    suggs = get_suggs(self.query)
-                    if suggs:
-                        self.msg = suggs
-                    else:
-                        self.msg = 'I\'m afraid I couldn\'t find ' + \
-                            f'"{utilities.capitalise(self.query)}".'
-    
+            self.get_card()
+
+        return self.result
+
     @property
     def found(self):
-        if not self.card and not self.msg:
+        if self.result is None:
             self.resolve()
 
-        if self.card:
-            return self.card
-        elif self.msg:
-            return self.msg
-        else: #If we don't have a card or a message, there's a problem
+        if self.result is None:
             utilities.log_message(
                 'Failed to find card while searching scryfall for '
                 f'"{self.query}".'
@@ -173,6 +172,7 @@ class Query():
             return 'Oops, something went wrong when I was looking for ' + \
                 f'"{utilities.capitalise(self.query)}". Let Owen know!'
 
+        return self.result
 
 # Return query objects for each card found in the message
 def get_queries(message):
@@ -185,85 +185,6 @@ def get_queries(message):
         name = q.group('name')
         ed = q.group('ed')
 
-        queries.append(Query(name, ed))
+        queries.append(ScryfallRequest(name, ed))
 
     return queries                    
-
-# Conduct all necessary api calls to return uris immediately
-def get_cards(message):
-    return [query.found for query in get_queries(message)]
-
-#Get uri of a cardname query
-def get_fuzzy(query):
-    request = 'https://api.scryfall.com/cards/named?fuzzy=' + \
-        query.replace(' ', '+') # Use fuzzy for partial matching
-    
-    r = requests.get(request).json() #Get the response as a dictionary
-    if 'status' in r and r['status'] == 404: #If no card found, return false
-        return False
-
-    return Card.from_scryfall_response(r)
-
-#Get uri of a specific printing of card
-def get_printing(query, ed):
-    request = f'https://api.scryfall.com/cards/search?q=e%3D{ed}+' + \
-        query.replace(' ','+') #Search for cards in specificied ed
-    r = requests.get(request).json() #Get data as dictionary
-    if 'status' in r and r['status'] == 404: #If card doesn't exist
-        return False #We return a few data types to save on api calls
-    elif len(r['data']) > 1: #If there are more than 1 matches
-        names = [r['data'][i]['name'] for i in range(len(r['data']))]
-
-        try:
-            return Card.from_scryfall_response(
-                r['data'][[n.lower() for n in names].index(query.lower())]
-            ) # This will succeed if a card with the exact name of the query is found.
-        except ValueError:
-            pass
-
-        if len(names) > 5: #If there are more than 5 suggestions
-            random.shuffle(names)
-            names = names[0:5] #Pick 5 at random
-            names.sort()
-        msg = f'I couldn\'t find "{utilities.capitalise(query)}" in ' + \
-            f'"{ed.upper()}". Maybe you meant:\n\n'
-        for sugg in names:
-            msg += '\t' + sugg + '\n'
-        return msg
-    else:
-        return Card.from_scryfall_response(r['data'][0])
-
-#Get a random card uri
-def get_random_card():
-    request = 'https://api.scryfall.com/cards/random' #Information of a random card
-    r = requests.get(request).json() #Get data as json
-    return Card.from_scryfall_response(r)
-
-#Get a random card froma set
-def get_random_from_set(ed):
-    request = 'https://api.scryfall.com/cards/random?q=e%3D' + ed #Provide ed to get random card from
-    r = requests.get(request).json() #Get as dict
-    if 'status' in r and r['status'] == 404: #This means the set wasn't found
-        return False
-    else: #We found a card
-        return Card.from_scryfall_response(r)
-
-#Get suggestions similar to a card name
-def get_suggs(query):
-    request = 'https://api.scryfall.com/cards/search?q=' + \
-        query.replace(' ','+') #Search for the card
-    r = requests.get(request).json() #Get data as json
-    if 'status' in r and r['status'] == 404:  #If card not found return false
-        return False
-
-    data = [r['data'][i]['name'] for i in range(0, len(r['data']))]
-    if len(data) > 5: #If there are more than 5 suggestions
-        random.shuffle(data)
-        data = data[0:5] #Pick 5 at random
-        data.sort()
-
-    msg = f'Couldn\'t find {utilities.capitalise(query)}. Maybe you meant:\n\n'
-    for sugg in data:
-        msg += '\t'+sugg+'\n'
-    
-    return msg
