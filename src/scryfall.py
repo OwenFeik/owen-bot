@@ -32,14 +32,17 @@ class Card:
         else:
             return Card.EMBED_COLOURS[self.colour_id[0]]
 
-    def get_embeds(self):
-        return [
-            discord.Embed(
-                title=self.name, 
-                description=self.price, 
-                colour=self.get_embed_colour()
-            ).set_thumbnail(url=self.uri)
-        ]
+    def get_embeds(self, style='thumbnail'):
+        embed = discord.Embed(
+            title=self.name, 
+            description=self.price, 
+            colour=self.get_embed_colour()
+        )
+
+        if style == 'thumbnail':
+            return [embed.set_thumbnail(url=self.uri)]
+        elif style == 'full':
+            return [embed.set_image(url=self.uri)]
 
 class DoubleFacedCard(Card):
     def __init__(self, names, uris, price, colour_id):
@@ -48,18 +51,25 @@ class DoubleFacedCard(Card):
         self.back_name = names[1]
         self.back_uri = names[1]
 
-    def get_embeds(self):
-        return [
-            discord.Embed(
-                title=self.name,
-                description=self.price,
-                colour=self.get_embed_colour()
-            ).set_thumbnail(url=self.uri),
-            discord.Embed(
-                title=self.back_name,
-                colour=self.get_embed_colour()
-            ).set_thumbnail(url=self.uri)
-        ]
+        self.back_face = Card(
+            self.back_name,
+            self.back_uri,
+            '',
+            self.colour_id
+        )
+
+    def get_embeds(self, style='thumbnail'):
+        embeds = super().get_embeds(style)
+        embeds.extend(self.back_face.get_embeds(style))
+        return embeds
+
+class CardList():
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def from_scryfall_response(data):
+        pass
 
 def get_price_string(data):
     price = data['prices']['usd']
@@ -87,11 +97,12 @@ def card_from_scryfall_response(data):
 class ScryfallRequest():
     BASE = 'https://api.scryfall.com/cards/'
     MODES = {
-        'random': 'random',
-        'random_ed': 'random?q=e%3D{}',
         'name': 'search?q={}',
         'name_ed': 'search?q=e%3D{}+{}',
         'fuzzy': 'named?fuzzy={}',
+        'random': 'random',
+        'random_ed': 'random?q=e%3D{}',
+        'search': 'search?q={}'
     }
     BEST_CARDS = [
         'Faithless Looting',
@@ -101,10 +112,13 @@ class ScryfallRequest():
         'Niv-Mizzet Reborn'
     ]
 
-    def __init__(self, query, ed):
+    def __init__(self, query, ed, is_search=False, embed_style='thumbnail'):
         self.query = query
         self.ed = ed
         self.result = None
+        self.mode = None
+        self.is_search = is_search
+        self.embed_style = embed_style
 
     def perform_request(self, url, failure_message):
         self.result = failure_message
@@ -113,8 +127,14 @@ class ScryfallRequest():
         if resp.get('status') == 404:
             return self.result
 
-        data = resp.get('data')
+        data_type = resp.get('object')
 
+        if data_type == 'card':
+            self.result = card_from_scryfall_response(resp)
+        elif data_type == 'list':
+            self.result = CardList.from_scryfall_response(resp)
+
+        return self.result
 
     def get_random_card(self):
         if self.ed:
@@ -147,10 +167,18 @@ class ScryfallRequest():
             f'I\'m afraid I couldn\'t find "{self.query}".'
         )
 
+    def get_search_results(self):
+        return self.perform_request(
+            ScryfallRequest.MODES['search'].format(self.query),
+            f'I didn\'t find any cards matching this search.'
+        )
+
     def resolve(self):
-        if self.query == 'random':
+        if self.is_search:
+            self.get_search_results()
+        elif self.query.lower() == 'random':
             self.get_random_card()
-        elif self.query in ['best card', 'the best card']:
+        elif self.query.lower() in ['best card', 'the best card']:
             self.get_best_card()
         elif self.ed:
             self.get_card_edition()
@@ -179,12 +207,21 @@ def get_queries(message):
     queries = []
     message = re.sub(r'(?<!\\)`.*(?<!\\)`', '', message)
     for q in re.finditer(
-        r'\[(?P<name>[\w ,.:!?&\'\/\-\"\(\)]+)(\|(?P<ed>[a-z0-9 \-]+))?\]',
-        message.lower()
+        r'\[(?P<prefix>(\?!|!\?|[\?!])(?!\]))?'
+        r'(?P<query>[\w ,.:!?&\'\/\-\"\(\)]+)(\|(?P<ed>[a-z0-9 \-]+))?\]',
+        flags=re.IGNORECASE
     ):
-        name = q.group('name')
-        ed = q.group('ed')
+        prefix = q.group('prefix')
+        if prefix is None:
+            is_search = False
+            embed_style = 'thumbnail'
+        else:
+            embed_style = 'full' if '!' in prefix else 'thumbnail'
+            is_search = True if '?' in prefix else False
 
-        queries.append(ScryfallRequest(name, ed))
+        query = q.group('name').strip()
+        ed = q.group('ed').strip()
+
+        queries.append(ScryfallRequest(query, ed, is_search, embed_style))
 
     return queries                    
