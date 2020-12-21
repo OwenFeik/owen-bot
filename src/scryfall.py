@@ -63,14 +63,6 @@ class DoubleFacedCard(Card):
         embeds.extend(self.back_face.get_embeds(style))
         return embeds
 
-class CardList():
-    def __init__(self):
-        pass
-
-    @staticmethod
-    def from_scryfall_response(data):
-        pass
-
 def get_price_string(data):
     price = data['prices']['usd']
     if price is None:
@@ -94,9 +86,27 @@ def card_from_scryfall_response(data):
             uri = data['image_uris']['normal']
             return Card(name, uri, price, colour_id)
 
+class CardList():
+    def __init__(self, cards, message):
+        self.cards = cards
+        self.message = message
+
+    def get_embed(self):
+        return discord.Embed(
+            title='Results',
+            description=self.message
+        )
+
+    @staticmethod
+    def from_scryfall_response(data, message):
+        return CardList(
+            [card_from_scryfall_response(c) for c in data],
+            message
+        )
+
 class ScryfallRequest():
-    BASE = 'https://api.scryfall.com/cards/'
-    MODES = {
+    BASE_URL = 'https://api.scryfall.com/cards/'
+    QUERIES = {
         'name': 'search?q={}',
         'name_ed': 'search?q=e%3D{}+{}',
         'fuzzy': 'named?fuzzy={}',
@@ -111,6 +121,9 @@ class ScryfallRequest():
         'Smuggler\'s Copter',
         'Niv-Mizzet Reborn'
     ]
+    ERROR_MESSAGE = 'Something went wrong and I failed to {}'
+    FAILURE_MESSAGE = 'I\'m afraid I couldn\'t find {}'
+    SUGGEST_MESSAGE = FAILURE_MESSAGE + '. Perhaps you meant one of these?'
 
     def __init__(self, query, ed, is_search=False, embed_style='thumbnail'):
         self.query = query
@@ -120,57 +133,75 @@ class ScryfallRequest():
         self.is_search = is_search
         self.embed_style = embed_style
 
-    def perform_request(self, url, failure_message):
+    def perform_request(self, query, failure_message, suggest=None):
         self.result = failure_message
 
-        resp = requests.get(url).json()
+        resp = requests.get(ScryfallRequest.BASE_URL + query).json()
         if resp.get('status') == 404:
-            return self.result
+            if suggest is not None:
+                resp = requests.get(
+                    ScryfallRequest.QUERIES['search'].format(self.query)
+                ).json()
+
+                if resp.get('status') == 404:
+                    return self.result
+                else:
+            else:
+                return self.result
 
         data_type = resp.get('object')
 
         if data_type == 'card':
             self.result = card_from_scryfall_response(resp)
         elif data_type == 'list':
-            self.result = CardList.from_scryfall_response(resp)
+            cards = resp['data']
+
+            if len(cards) == 1:
+                self.result = card_from_scryfall_response(cards[0])
+            else:
+                message = suggest if suggest is not None else ''
+                self.result = CardList.from_scryfall_response(cards, message)
 
         return self.result
 
     def get_random_card(self):
         if self.ed:
             return self.perform_request(
-                ScryfallRequest.MODES['random_ed'].format(self.ed),
+                ScryfallRequest.QUERIES['random_ed'].format(self.ed),
                 f'I couldn\'t find edition "{self.ed}".'
             )
         return self.perform_request(
-            ScryfallRequest.MODES['random'],
-            'Something went wrong and I failed to find a random card.'
+            ScryfallRequest.QUERIES['random'],
+            ScryfallRequest.ERROR_MESSAGE.format('find a random card.')
         )
     
     def get_best_card(self):
         return self.perform_request(
-            ScryfallRequest.MODES['fuzzy'].format(
+            ScryfallRequest.QUERIES['fuzzy'].format(
                 random.choice(ScryfallRequest.BEST_CARDS)
             ),
-            'Something went wrong and I failed to find the best card.'
+            ScryfallRequest.ERROR_MESSAGE.format('find the best card.')
         )
 
     def get_card_edition(self):
+        query_string = f'"{self.query}" in "{self.ed}"'
         return self.perform_request(
-            ScryfallRequest.MODES['name_ed'].format(self.ed, self.query),
-            f'I\'m afraid I couldn\'t find "{self.query}" in "{self.ed}".'
+            ScryfallRequest.QUERIES['name_ed'].format(self.ed, self.query),
+            ScryfallRequest.FAILURE_MESSAGE.format(query_string),
+            ScryfallRequest.SUGGEST_MESSAGE.format(query_string)
         )
 
     def get_card(self):
         return self.perform_request(
-            ScryfallRequest.MODES['fuzzy'].format(self.query),
-            f'I\'m afraid I couldn\'t find "{self.query}".'
+            ScryfallRequest.QUERIES['fuzzy'].format(self.query),
+            ScryfallRequest.FAILURE_MESSAGE.format(self.query),
+            ScryfallRequest.SUGGEST_MESSAGE.format(self.query)
         )
 
     def get_search_results(self):
         return self.perform_request(
-            ScryfallRequest.MODES['search'].format(self.query),
-            f'I didn\'t find any cards matching this search.'
+            ScryfallRequest.QUERIES['search'].format(self.query),
+            ScryfallRequest.FAILURE_MESSAGE.format('any cards matching this search.')
         )
 
     def resolve(self):
@@ -180,15 +211,12 @@ class ScryfallRequest():
             self.get_random_card()
         elif self.query.lower() in ['best card', 'the best card']:
             self.get_best_card()
-        elif self.ed:
-            self.get_card_edition()
         else:
             self.get_card()
 
         return self.result
 
-    @property
-    def found(self):
+    def get_result(self):
         if self.result is None:
             self.resolve()
 
