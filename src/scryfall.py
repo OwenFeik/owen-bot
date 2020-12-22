@@ -1,5 +1,5 @@
 import random # used to return a random sample of suggestions
-import re # Find queries in a message
+import re
 
 import requests # Grab card data from scryfall
 import discord
@@ -24,6 +24,9 @@ class Card:
         self.price = price
 
         self.colour_id = colour_id if colour_id else []
+
+    def __repr__(self):
+        return f'<Card name: {self.name} price: {self.price} uri: {self.uri}>'
 
     def get_embed_colour(self):
         if len(self.colour_id) > 1:
@@ -50,7 +53,7 @@ class DoubleFacedCard(Card):
         super().__init__(names[0], uris[0], price, colour_id)
 
         self.back_name = names[1]
-        self.back_uri = names[1]
+        self.back_uri = uris[1]
 
         self.back_face = Card(
             self.back_name,
@@ -58,6 +61,10 @@ class DoubleFacedCard(Card):
             '',
             self.colour_id
         )
+
+    def __repr__(self):
+        return f'<DoubleFaced{super().__repr__()[1:-1]} ' \
+            f'back_face: {self.back_face}>'
 
     def get_embeds(self, style='thumbnail'):
         embeds = super().get_embeds(style)
@@ -158,6 +165,11 @@ class ScryfallRequest():
         self.is_search = is_search
         self.embed_style = embed_style
 
+    def __repr__(self):
+        return f'<ScryfallRequest query: "{self.query}", ed: "{self.ed}", ' \
+            f'result: {self.result}, is_search: {self.is_search}, ' \
+            f'embed_style: {self.embed_style}>'
+
     def perform_request(self, query, failure_message, suggest=None):
         self.result = failure_message
 
@@ -207,15 +219,14 @@ class ScryfallRequest():
             ScryfallRequest.ERROR_MESSAGE.format('find the best card.')
         )
 
-    def get_card_edition(self):
-        query_string = f'"{self.query}" in "{self.ed}"'
-        return self.perform_request(
-            ScryfallRequest.QUERIES['name_ed'].format(self.ed, self.query),
-            ScryfallRequest.FAILURE_MESSAGE.format(query_string),
-            ScryfallRequest.SUGGEST_MESSAGE.format(query_string)
-        )
-
     def get_card(self):
+        if self.ed:
+            query_string = f'"{self.query}" in "{self.ed}"'
+            return self.perform_request(
+                ScryfallRequest.QUERIES['name_ed'].format(self.ed, self.query),
+                ScryfallRequest.FAILURE_MESSAGE.format(query_string),
+                ScryfallRequest.SUGGEST_MESSAGE.format(query_string)
+            )
         return self.perform_request(
             ScryfallRequest.QUERIES['fuzzy'].format(self.query),
             ScryfallRequest.FAILURE_MESSAGE.format(self.query),
@@ -225,7 +236,9 @@ class ScryfallRequest():
     def get_search_results(self):
         return self.perform_request(
             ScryfallRequest.QUERIES['search'].format(self.query),
-            ScryfallRequest.FAILURE_MESSAGE.format('any cards matching this search.')
+            ScryfallRequest.FAILURE_MESSAGE.format(
+                'any cards matching this search.'
+            )
         )
 
     def resolve(self):
@@ -288,10 +301,10 @@ class ScryfallHandler(commands.Command):
         super().__init__(config)
         self.commands = ['--mtg']
         self.will_send = True
-        self.interactions = {}
+        self.sent = {}
 
     async def handle(self, message):
-        queries = scryfall.get_queries(message.content)
+        queries = get_queries(message.content)
         for query in queries:
             found = query.found
             if type(found) == str:
@@ -299,3 +312,17 @@ class ScryfallHandler(commands.Command):
             else:
                 for face in found.embed:
                     await message.channel.send(embed=face)
+
+    async def send(self, content, channel):
+        if type(content) == str:
+            message = await channel.send(content)
+        elif type(content) == discord.Embed:
+            message = await channel.send(embed=content)
+        elif type(content) == list:
+            for c in content:
+                await self.send(c, channel)
+            return
+        else:
+            raise TypeError(f'Can\'t send {content} in {channel}.')
+
+        self.sent[message.id] = content
