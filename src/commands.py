@@ -1,10 +1,10 @@
 import asyncio
 import difflib
 import random
+import re
 
 import discord
 
-import scryfall
 import spellbook
 import utilities
 import wordart
@@ -15,7 +15,7 @@ class Command():
         self.commands = []
         self.delete_message = False
         self.will_send = False
-        self.regex = None
+        self.regex = re.compile(self.regex) if hasattr(self, 'regex') else None
 
     async def _handle(self, _):
         return 'Not implemented.'
@@ -62,8 +62,8 @@ class Blackletter(Command):
 class Creeper(Command):
     def __init__(self, config):
         assert config['creeper']
-        super().__init__(config)
         self.regex = 'creeper'
+        super().__init__(config)
 
     async def handle(self, _):
         return discord.Embed(
@@ -116,7 +116,7 @@ class Help(Command):
         return f'I\'m afraid I can\'t help you with {argument}.'
 
 class JoJo(Command):
-    words = [
+    WEEB_WORDS = [
         'jojo',
         'stardust',
         'yare',
@@ -128,9 +128,9 @@ class JoJo(Command):
     ]
 
     def __init__(self, config):
-        super().__init__(config)
-        word_string = '|'.join(self.words)
+        word_string = '|'.join(JoJo.WEEB_WORDS)
         self.regex = f'(?i)({word_string})'
+        super().__init__(config)
 
     async def handle(self, message):
         return discord.Embed(
@@ -160,23 +160,6 @@ class Reverse(Command):
 
     async def handle(self, _):
         return discord.Embed().set_image(url=random.choice(self.image_urls))
-
-class Scryfall(Command):
-    def __init__(self, config):
-        assert config['scryfall']
-        super().__init__(config)
-        self.regex = r'\[[^\[\]]+\]'
-        self.will_send = True
-
-    async def handle(self, message):
-        queries = scryfall.get_queries(message.content)
-        for query in queries:
-            found = query.found
-            if type(found) == str:
-                await message.channel.send(found)
-            else:
-                for face in found.embed:
-                    await message.channel.send(embed=face)
 
 class Spell(Command):
     def __init__(self, config):

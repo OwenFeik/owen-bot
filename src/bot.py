@@ -12,6 +12,7 @@ import database
 import kick
 import mcserv
 import roll
+import scryfall
 import utilities
 
 class Bot():
@@ -26,6 +27,7 @@ class Bot():
         commands.No,
         commands.Reverse,
         roll.RollCommand,
+        scryfall.ScryfallHandler,
         commands.Spell,
         commands.VaporWave,
         commands.Weeb,
@@ -36,7 +38,7 @@ class Bot():
     patterns = [
         commands.Creeper,
         commands.JoJo,
-        commands.Scryfall
+        scryfall.ScryfallHandler
     ]
 
     def __init__(self, client, loop):

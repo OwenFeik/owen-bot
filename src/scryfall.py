@@ -4,6 +4,7 @@ import re # Find queries in a message
 import requests # Grab card data from scryfall
 import discord
 
+import commands
 import utilities
 
 class Card:
@@ -90,12 +91,36 @@ class CardList():
     def __init__(self, cards, message):
         self.cards = cards
         self.message = message
+        self._results = None
+
+    @property
+    def results(self):
+        if self._results is None:
+            if len(self.cards) > 5:
+                self._results = self.cards[:]
+                random.shuffle(self.results)
+                self._results = sorted(
+                    self._results[:5],
+                    key=lambda c: c.name
+                )
+            else:
+                self._results = self.cards
+        return self._results
 
     def get_embed(self):
-        return discord.Embed(
-            title='Results',
+        e = discord.Embed(
             description=self.message
         )
+
+        e.add_field(
+            name='Results',
+            value='\n'.join([c.name for c in self.results])
+        )
+
+        if len(self.cards) > 5:
+            e.set_footer(text=f'5 of {len(self.cards)} results.')
+
+        return e
 
     @staticmethod
     def from_scryfall_response(data, message):
@@ -145,7 +170,6 @@ class ScryfallRequest():
 
                 if resp.get('status') == 404:
                     return self.result
-                else:
             else:
                 return self.result
 
@@ -237,6 +261,7 @@ def get_queries(message):
     for q in re.finditer(
         r'\[(?P<prefix>(\?!|!\?|[\?!])(?!\]))?'
         r'(?P<query>[\w ,.:!?&\'\/\-\"\(\)]+)(\|(?P<ed>[a-z0-9 \-]+))?\]',
+        message,
         flags=re.IGNORECASE
     ):
         prefix = q.group('prefix')
@@ -244,12 +269,33 @@ def get_queries(message):
             is_search = False
             embed_style = 'thumbnail'
         else:
-            embed_style = 'full' if '!' in prefix else 'thumbnail'
             is_search = True if '?' in prefix else False
+            embed_style = 'full' if '!' in prefix else 'thumbnail'
 
-        query = q.group('name').strip()
-        ed = q.group('ed').strip()
+        query = q.group('query').strip()
+        ed = q.group('ed')
+        if ed:
+            ed = ed.strip()
 
         queries.append(ScryfallRequest(query, ed, is_search, embed_style))
 
     return queries                    
+
+class ScryfallHandler(commands.Command):
+    def __init__(self, config):
+        assert config['scryfall']
+        self.regex = r'\[[^\[\]]+\]'
+        super().__init__(config)
+        self.commands = ['--mtg']
+        self.will_send = True
+        self.interactions = {}
+
+    async def handle(self, message):
+        queries = scryfall.get_queries(message.content)
+        for query in queries:
+            found = query.found
+            if type(found) == str:
+                await message.channel.send(found)
+            else:
+                for face in found.embed:
+                    await message.channel.send(embed=face)
