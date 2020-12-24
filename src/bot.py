@@ -186,7 +186,11 @@ intents.members = True
 intents.reactions = True
 
 loop = asyncio.get_event_loop()
-client = discord.Client(loop=loop, intents=intents)
+client = discord.Client(
+    loop=loop,
+    intents=intents,
+    activity=discord.Activity(name='you try --help', type=3)
+)
 bot = Bot(client, loop=loop)
 
 @client.event
@@ -202,6 +206,5 @@ async def on_ready():
     utilities.log_message(f'Logged in as {client.user.name},' + \
         f' ID: {client.user.id}')
     utilities.log_message('==== BEGIN LOG ====')
-    await client.change_presence(activity=discord.Activity(name='try --help'))
 
 bot.start()
