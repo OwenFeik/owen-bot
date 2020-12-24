@@ -1,24 +1,32 @@
-import asyncio
 import difflib
 import random
+import re
 
 import discord
 
-import scryfall
 import spellbook
 import utilities
 import wordart
 import xkcd
 
+# pylint: disable=abstract-method
+# Many subclasses ignore the optional _handle abstract method of Command.
+
 class Command():
-    def __init__(self, _):
-        self.commands = []
-        self.delete_message = False
-        self.will_send = False
-        self.regex = None
+    def __init__(self, _, **kwargs):
+        # Strings used to call this command
+        self.commands = kwargs.get('commands', [])
+        # This command would like messages it responds to deleted
+        self.delete_message = kwargs.get('delete_message', False)
+        # This command will send responses itself rather than returning them
+        self.will_send = kwargs.get('will_send', False)
+        # This command monitors reactions to its messages
+        self.monitors_reactions = kwargs.get('monitors_reactions', False)
+        # Ids of messages that this command would like to monitor for reactions
+        self.reaction_targets = kwargs.get('reaction_targets', [])
 
     async def _handle(self, _):
-        return 'Not implemented.'
+        raise NotImplementedError()
 
     def remove_command_string(self, text):
         argument = text[max([len(c) for c in self.commands if \
@@ -28,10 +36,23 @@ class Command():
     async def handle(self, message):
         return await self._handle(self.remove_command_string(message.content))
 
+    async def handle_reaction(self, reaction, user):
+        raise NotImplementedError()
+
+class Pattern(Command):
+    def __init__(self, _, **kwargs):
+        super().__init__(_, **kwargs)
+
+        regex = kwargs.get('regex')
+        if regex is None:
+            raise ValueError('Can\'t create a pattern without a regex.')
+
+        # Regular expression to match messages relevant to this command
+        self.regex = re.compile(regex)
+
 class About(Command):
     def __init__(self, config):
-        super().__init__(config)
-        self.commands = ['--about']
+        super().__init__(config, commands=['--about'])
     
     async def handle(self, _):
         return 'Hi, I\'m Owen\'s bot! I can help you in a variety of ways.' + \
@@ -40,8 +61,7 @@ class About(Command):
 
 class Blackletter(Command):
     def __init__(self, config):
-        super().__init__(config)
-        self.commands = ['--bl', '--blackletter']
+        super().__init__(config, commands=['--bl', '--blackletter'])
 
     async def handle(self, message):
         self.delete_message = False
@@ -59,11 +79,10 @@ class Blackletter(Command):
         self.delete_message = True
         return wordart.blackletter(argument)
 
-class Creeper(Command):
+class Creeper(Pattern):
     def __init__(self, config):
         assert config['creeper']
-        super().__init__(config)
-        self.regex = 'creeper'
+        super().__init__(config, regex='creeper')
 
     async def handle(self, _):
         return discord.Embed(
@@ -74,16 +93,14 @@ class Creeper(Command):
 
 class Hello(Command):
     def __init__(self, config):
-        super().__init__(config)
-        self.commands = ['--hello']
+        super().__init__(config, commands=['--hello'])
 
     async def handle(self, message):
         return f'Greetings, {message.author.mention}.'
 
 class Help(Command):
     def __init__(self, config):
-        super().__init__(config)
-        self.commands = ['--help']
+        super().__init__(config, commands=['--help'])
         self.help_strings = utilities.load_help()
 
         if not config['dnd_spells']:
@@ -93,7 +110,7 @@ class Help(Command):
         if not config['mcserv']:
             del self.help_strings['minecraft']
         if not config['scryfall']:
-            del self.help_strings['magic']
+            del self.help_strings['mtg']
         if not config['xkcd']:
             del self.help_strings['xkcd']
 
@@ -115,8 +132,8 @@ class Help(Command):
                 f'Perhaps you meant `{suggestion[0]}`?'
         return f'I\'m afraid I can\'t help you with {argument}.'
 
-class JoJo(Command):
-    words = [
+class JoJo(Pattern):
+    WEEB_WORDS = [
         'jojo',
         'stardust',
         'yare',
@@ -128,29 +145,25 @@ class JoJo(Command):
     ]
 
     def __init__(self, config):
-        super().__init__(config)
-        word_string = '|'.join(self.words)
-        self.regex = f'(?i)({word_string})'
+        word_string = '|'.join(JoJo.WEEB_WORDS)
+        super().__init__(config, regex=f'(?i)({word_string})')
 
     async def handle(self, message):
         return discord.Embed(
             description= message.author.mention + \
                 ', there\'s something you should know.'
-        ).set_image(url='https://i.imgur.com/mzbvy4b.png')
+        ).set_image(url=Weeb.IMAGE_URL)
 
 class No(Command):
     def __init__(self, config):
-        super().__init__(config)
-        self.commands = ['--no']
+        super().__init__(config, commands=['--no'])
     
     async def handle(self, message):
         return wordart.no
 
 class Reverse(Command):
     def __init__(self, config):
-        super().__init__(config)
-        self.commands = ['--reverse']
-        self.delete_message = True
+        super().__init__(config, commands=['--reverse'], delete_message=True)
         self.image_urls = [
             'https://i.imgur.com/yXEiYQ4.png',
             'https://i.imgur.com/CSuB3ZW.png',
@@ -161,28 +174,10 @@ class Reverse(Command):
     async def handle(self, _):
         return discord.Embed().set_image(url=random.choice(self.image_urls))
 
-class Scryfall(Command):
-    def __init__(self, config):
-        assert config['scryfall']
-        super().__init__(config)
-        self.regex = r'\[[^\[\]]+\]'
-        self.will_send = True
-
-    async def handle(self, message):
-        queries = scryfall.get_queries(message.content)
-        for query in queries:
-            found = query.found
-            if type(found) == str:
-                await message.channel.send(found)
-            else:
-                for face in found.embed:
-                    await message.channel.send(embed=face)
-
 class Spell(Command):
     def __init__(self, config):
         assert config['dnd_spells']
-        super().__init__(config)
-        self.commands = ['--spell']
+        super().__init__(config, commands=['--spell'])
         self.sb = spellbook.Spellbook(config['spellbook_url'])
         utilities.log_message('Successfully downloaded spellbook.')
 
@@ -193,8 +188,7 @@ class Spell(Command):
 
 class VaporWave(Command):
     def __init__(self, config):
-        super().__init__(config)
-        self.commands = ['--vw', '--vaporwave']
+        super().__init__(config, commands=['--vw', '--vaporwave'])
 
     async def handle(self, message):
         self.delete_message = False
@@ -213,21 +207,23 @@ class VaporWave(Command):
         return wordart.vaporwave(argument)
 
 class Weeb(Command):
+    IMAGE_URL = 'https://i.imgur.com/mzbvy4b.png'
+
     def __init__(self, config):
-        super().__init__(config)
-        self.commands = ['--weeb']
-        self.image_url = 'https://i.imgur.com/mzbvy4b.png'
+        super().__init__(config, commands=['--weeb'])
     
     async def handle(self, _):
-        return discord.Embed().set_image(url = self.image_url)
+        return discord.Embed().set_image(url=Weeb.IMAGE_URL)
 
 class WordArt(Command):
     def __init__(self, config):
-        super().__init__(config)
-        self.commands = ['--wa', '--wordart']
-        self.default_emoji = config['wordart_emoji']
-        self.will_send = True
+        super().__init__(
+            config,
+            commands=['--wa', '--wordart'],
+            will_send=True
+        )
 
+        self.default_emoji = config['wordart_emoji']
         wordart.load_wa_alphabet()
         
     async def handle(self, message):
@@ -258,8 +254,7 @@ class WordArt(Command):
 class XKCD(Command):
     def __init__(self, config):
         assert config['xkcd']
-        super().__init__(config)
-        self.commands = ['--xkcd']
+        super().__init__(config, commands=['--xkcd'])
 
         xkcd.init_db()
         xkcd.start_db_thread(config['xkcd_interval'], config['client'])

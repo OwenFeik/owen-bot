@@ -71,8 +71,7 @@ class Vote():
 class Minecraft(commands.Command):
     def __init__(self, config):
         assert config['mcserv']
-        super().__init__(config)
-        self.commands = ['--minecraft']
+        super().__init__(config, commands=['--minecraft'])
 
         config = config['mcserv_config']
         self.config = config

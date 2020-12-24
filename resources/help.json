@@ -8,7 +8,7 @@
     "hello": "Say hi to me! I'll say hi back.",
     "help": "Use `--help <command>` to get help about a specific command",
     "kick": "User `--kick <mention>` to disconnect someone you don't like.",
-    "magic": "Search for Magic cards as follows:\nFind a [card] like this.\nFind a specific [printing|like this]\nGet a [random] card.",
+    "mtg": "Search for Magic cards as follows:\n\nFind a [card] like this.\nFind a specific [printing|like this]\nGet a [random] card.\n[?search] for a card with Scryfall syntax.\nShow a [!large] card result embed.\n\nYou can interact with the card result embeds these actions produce like so:\n\nTo select a search result react to it with a number emoji.\nTo enlarge a card result, react to it with a magnifying glass or microscope emoji.\nTo shrink a large card result, react to it with a pinching or telescope emoji.\nTo delete a card result, react to it with a cross.",
     "minecraft": "Submit a vote to reboot the minecraft server. Usage: `--minecraft reboot`.",
     "no": "Send a firm denial.",
     "reverse": "Say \"no u\" pictorially.",
@@ -18,5 +18,5 @@
     "wordart": "Convert the input text into emoji wordart. A default emoji will be used or to use a different emoji you may include it in the text of your message. Usage: `--wa <text>`.",
     "weeb": "Let someone know what you think of them after a JoJo reference.",
     "xkcd": "User `--xkcd <comic name>` or `--xkcd <comic number>` to grab an xkcd comic. Alternately, use `--xkcd random` for a random comic, or `--xkcd newest` for the most recent comic.",
-    "": "You can use this command to get help about specific commands with `--help <command>`. To see a list of commands, try `--all`. To see how to find Magic cards, try `--help magic`." 
+    "": "You can use this command to get help about specific commands with `--help <command>`. To see a list of commands, try `--all`. To see how to find Magic cards, try `--help mtg`." 
 }

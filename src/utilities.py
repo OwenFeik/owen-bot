@@ -2,6 +2,9 @@ import json
 import re
 import time
 
+import discord
+import emoji
+
 class Logger():
     def __init__(self):
         self.log_to_file = True
@@ -159,3 +162,29 @@ def capitalise(name):
             words[i] = words[i].replace(c, c.upper(), 1)
     
     return ' '.join(words)
+
+async def get_member(guild, member_id):
+    member = guild.get_member(member_id)
+    if member is None:
+        try:
+            member = await guild.fetch_member(member_id)
+        except discord.Forbidden as e:
+            log_message(
+                'Got forbidden when searching for member '
+                f'{member_id} in guild "{guild.name}": {e}'
+            )
+        except discord.HTTPException as e:
+            log_message(
+                f'Failed to find member {member_id} in {guild.name}: {e}'
+            )
+    return member
+
+def is_guild_owner(guild, member_id):
+    return (guild.owner and guild.owner.id == member_id) or \
+        guild.owner_id == member_id
+
+def get_emoji_name(discord_emoji):
+    match = re.match(r'<:(?P<name>[a-zA-Z_]+):\d{18}>', discord_emoji)
+    if match:
+        return match.group('name')
+    return emoji.demojize(discord_emoji)[1:-1]

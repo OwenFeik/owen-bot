@@ -11,10 +11,12 @@ import utilities
 
 class RollCommand(commands.Command):
     def __init__(self, config):
-        super().__init__(config)
-        self.commands = ['--roll', '--dmroll', '--gmroll']
-        self.delete_message = True
-        self.will_send = True
+        super().__init__(
+            config,
+            commands=['--roll', '--dmroll', '--gmroll'],
+            delete_message=True,
+            will_send=True
+        )
         self.dm_role = config['dm_role']
         self.failstr = 'Invalid format'
         self.db = database.Roll_Database()
