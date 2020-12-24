@@ -5,28 +5,33 @@ import discord
 
 import commands
 import database
-import discord_helpers
 import utilities
 
+# pylint: disable=abstract-method
+
 class CampaignCommand(commands.Command):
-    def __init__(self, config):
-        super().__init__(config)
+    def __init__(self, config, **kwargs):
+        super().__init__(config, **kwargs)
 
         # Command argument must be alphanumeric
-        self.needs_alnum = False
+        self.needs_alnum = kwargs.get('needs_alnum', False)
         # This command needs an active campaign
-        self.needs_campaign = False
+        self.needs_campaign = kwargs.get('needs_campaign', False)
         # This command can only be used by the DM
-        self.needs_dm = False 
+        self.needs_dm = kwargs.get('needs_dm', False)
         # This command requires a single mention in message
-        self.needs_mention = False 
+        self.needs_mention = kwargs.get('needs_mention', False) 
     
         # The campaign switcher object which manages the commands
-        self.meta = None
+        self.meta = kwargs.get('meta', None)
 
     def __str__(self):
         return self.commands[0]
 
+    # CampaignCommands define a different _handle interface to regular commands
+    # for the more specialised domain.
+    #
+    # pylint: disable=arguments-differ
     async def _handle(self, _guild, _campaign, _arg, _target):
         # guild: server the message was sent in
         # campaign: current active campaign on this server
@@ -34,7 +39,7 @@ class CampaignCommand(commands.Command):
         # target: if this is a mention command, the first mention,
         #     else the author.
 
-        return 'Not implemented.'
+        raise NotImplementedError()
 
     async def handle(self, message):
         guild = message.guild
@@ -46,11 +51,13 @@ class CampaignCommand(commands.Command):
 
 class Add(CampaignCommand):
     def __init__(self, config):
-        super().__init__(config)
-        self.commands = ['add']
-        self.needs_dm = True
-        self.needs_campaign = True
-        self.needs_mention = True
+        super().__init__(
+            config,
+            commands=['add'],
+            needs_dm=True,
+            needs_campaign=True,
+            needs_mention=True
+        )
 
     async def _handle(self, _guild, campaign, _arg, target):
         if target.id in campaign.players:
@@ -64,10 +71,12 @@ class Add(CampaignCommand):
 
 class Day(CampaignCommand):
     def __init__(self, config):
-        super().__init__(config)
-        self.commands = ['day']
-        self.needs_campaign = True
-        self.needs_dm = True
+        super().__init__(
+            config,
+            commands=['day'],
+            needs_campaign=True,
+            needs_dm=True
+        )
 
     async def _handle(self, _guild, campaign, arg, _target):
         if arg.lower() == 'none':
@@ -86,10 +95,12 @@ class Day(CampaignCommand):
 
 class Delete(CampaignCommand):
     def __init__(self, config):
-        super().__init__(config)
-        self.commands = ['delete']
-        self.needs_campaign = True
-        self.needs_dm = True
+        super().__init__(
+            config,
+            commands=['delete'],
+            needs_campaign=True,
+            needs_dm=True
+        )
 
     async def _handle(self, guild, campaign, _arg, _target):
         await self.meta.db.delete_campaign(campaign)
@@ -98,9 +109,7 @@ class Delete(CampaignCommand):
 
 class Join(CampaignCommand):
     def __init__(self, config):
-        super().__init__(config)
-        self.commands = ['join']
-        self.needs_campaign = True
+        super().__init__(config, commands=['join'], needs_campaign=True)
 
     async def _handle(self, _guild, campaign, _arg, target):
         if target.id in campaign.players:
@@ -113,9 +122,7 @@ class Join(CampaignCommand):
 
 class Leave(CampaignCommand):
     def __init__(self, config):
-        super().__init__(config)
-        self.commands = ['leave']
-        self.needs_campaign = True
+        super().__init__(config, commands=['leave'], needs_campaign=True)
 
     async def _handle(self, _guild, campaign, _arg, target):
         worked = campaign.remove_player(target.id)
@@ -129,8 +136,7 @@ class Leave(CampaignCommand):
 
 class List(CampaignCommand):
     def __init__(self, config):
-        super().__init__(config)
-        self.commands = ['list']
+        super().__init__(config, commands=['list'])
 
     async def _handle(self, guild, _campaign, _arg, _target):
         campaigns = \
@@ -142,9 +148,7 @@ class List(CampaignCommand):
 
 class Members(CampaignCommand):
     def __init__(self, config):
-        super().__init__(config)
-        self.commands = ['members']
-        self.needs_campaign = True
+        super().__init__(config, commands=['members'], needs_campaign=True)
 
     async def _handle(self, guild, campaign, _arg, _target):
         out = f'Members of campaign {campaign.name}'
@@ -163,9 +167,7 @@ class Members(CampaignCommand):
         dm_string = ''
         if campaign.dm:
             try:
-                dm_name = (
-                    await discord_helpers.get_member(guild, campaign.dm)
-                ).name
+                dm_name = (await utilities.get_member(guild, campaign.dm)).name
                 dm_string = 'DM: ' + dm_name
 
                 if campaign.dm in campaign.players:
@@ -185,7 +187,7 @@ class Members(CampaignCommand):
                     continue
 
                 try:
-                    name = (await discord_helpers.get_member(guild, p)).name
+                    name = (await utilities.get_member(guild, p)).name
                     name += f' ({n})' if n else ''
                     member_names.append(name)
                 except Exception as e:
@@ -200,11 +202,12 @@ class Members(CampaignCommand):
 
 class New(CampaignCommand):
     def __init__(self, config):
-        super().__init__(config)
-        self.commands = ['new']
-        self.needs_alnum = True
+        super().__init__(config, commands=['new'], needs_alnum=True)
 
     async def _handle(self, guild, campaign, arg, _target):
+        if arg == '':
+            return 'Usage: `--dnd new <name>`.'
+        
         if campaign:
             await self.meta.db.add_campaign(campaign)
 
@@ -217,9 +220,11 @@ class New(CampaignCommand):
 
 class Nick(CampaignCommand):
     def __init__(self, config):
-        super().__init__(config)
-        self.commands = ['nick', 'setnick']
-        self.needs_campaign = True
+        super().__init__(
+            config,
+            commands=['nick', 'setnick'],
+            needs_campaign=True
+        )
 
         self.regex = f'^--dnd ({"|".join(self.commands)})'
         self.nick_regex = re.compile(r'^[\w\- ]{1,32}$')
@@ -273,7 +278,7 @@ class Nick(CampaignCommand):
         if not message.author.id in campaign.players:
             return 'You must join the campaign with `--dnd join` ' \
                 'before you can set a nickname.'
-        if discord_helpers.is_guild_owner(message.guild, target.id):
+        if utilities.is_guild_owner(message.guild, target.id):
             if target.id == message.author.id:
                 return 'You are the server owner which means I can\'t ' \
                     'set your nickname.'
@@ -298,10 +303,12 @@ class Nick(CampaignCommand):
 
 class Notify(CampaignCommand):
     def __init__(self, config):
-        super().__init__(config)
-        self.commands = ['notify']
-        self.needs_campaign = True
-        self.needs_dm = True
+        super().__init__(
+            config,
+            commands=['notify'],
+            needs_campaign=True,
+            needs_dm=True
+        )
 
     async def handle(self, message):
         campaign = await self.meta.get_active_campaign(message.guild.id)
@@ -335,11 +342,13 @@ class Notify(CampaignCommand):
 
 class Remove(CampaignCommand):
     def __init__(self, config):
-        super().__init__(config)
-        self.commands = ['remove']
-        self.needs_campaign = True
-        self.needs_dm = True
-        self.needs_mention = True
+        super().__init__(
+            config,
+            commands=['remove'],
+            needs_campaign=True,
+            needs_dm=True,
+            needs_mention=True
+        )
 
     async def _handle(self, _guild, campaign, _arg, target):
         if target.id not in campaign.players:
@@ -352,9 +361,7 @@ class Remove(CampaignCommand):
 
 class SetCampaign(CampaignCommand):
     def __init__(self, config):
-        super().__init__(config)
-        self.commands = ['campaign']
-        self.needs_alnum = True
+        super().__init__(config, commands=['campaign'], needs_alnum=True)
 
     async def _handle(self, guild, campaign, arg, _target):
         if campaign and campaign.name.lower() == arg.lower():
@@ -387,11 +394,13 @@ class SetCampaign(CampaignCommand):
 
 class SetDM(CampaignCommand):
     def __init__(self, config):
-        super().__init__(config)
-        self.commands = ['setdm']
-        self.needs_campaign = True
-        self.needs_dm = True
-        self.needs_mention = True
+        super().__init__(
+            config,
+            commands=['setdm'],
+            needs_campaign=True,
+            needs_dm=True,
+            needs_mention=True
+        )
 
     async def _handle(self, guild, campaign, _arg, target):
         campaign.dm = target.id
@@ -402,10 +411,12 @@ class SetDM(CampaignCommand):
 
 class Time(CampaignCommand):
     def __init__(self, config):
-        super().__init__(config)
-        self.commands = ['time']
-        self.needs_campaign = True
-        self.needs_dm = True
+        super().__init__(
+            config,
+            commands=['time'],
+            needs_campaign=True,
+            needs_dm=True
+        )
 
     async def _handle(self, _guild, campaign, arg, _target):
         if arg.lower() == 'none':
@@ -504,8 +515,7 @@ class CampaignSwitcher(commands.Command):
 
     def __init__(self, config):
         assert config['dnd_campaign']
-        super().__init__(config)
-        self.commands = ['--dnd']
+        super().__init__(config, commands=['--dnd'])
         self.dm_role = config['dm_role']
         self.campaigns = {}
         self.db = database.Campaign_Database()
@@ -588,13 +598,13 @@ class CampaignSwitcher(commands.Command):
             if not n:
                 continue
 
-            member = await discord_helpers.get_member(guild, p)
+            member = await utilities.get_member(guild, p)
             if not member:
                 # missing_players.append(p)
                 continue
 
             if member.nick != n and not \
-                discord_helpers.is_guild_owner(guild, p):
+                utilities.is_guild_owner(guild, p):
                 
                 await member.edit(nick=n)
 
@@ -629,7 +639,7 @@ class CampaignSwitcher(commands.Command):
         campaign = await self.get_active_campaign(guild.id)
 
         for player in campaign.players:
-            member = await discord_helpers.get_member(guild, player)
+            member = await utilities.get_member(guild, player)
             if dm_role in member.roles:
                 await member.remove_roles(dm_role)
 
@@ -637,9 +647,9 @@ class CampaignSwitcher(commands.Command):
             return
 
         try:
-            dm = await discord_helpers.get_member(guild, campaign.dm)
+            dm = await utilities.get_member(guild, campaign.dm)
             await dm.add_roles(dm_role)
-        except AttributeError as e:
+        except AttributeError:
             # didn't find dm for some reason
             utilities.log_message(
                 f'Failed to find DM for campaign {campaign.name} in ' \

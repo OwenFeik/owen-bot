@@ -16,7 +16,7 @@ import scryfall
 import utilities
 
 class Bot():
-    instructions = [
+    INSTRUCTIONS = [
         commands.About,
         commands.Blackletter,
         campaign.CampaignSwitcher,
@@ -27,7 +27,6 @@ class Bot():
         commands.No,
         commands.Reverse,
         roll.RollCommand,
-        scryfall.ScryfallHandler,
         commands.Spell,
         commands.VaporWave,
         commands.Weeb,
@@ -35,7 +34,7 @@ class Bot():
         commands.XKCD
     ]
 
-    patterns = [
+    PATTERNS = [
         commands.Creeper,
         commands.JoJo,
         scryfall.ScryfallHandler
@@ -49,7 +48,7 @@ class Bot():
         self.db = database.Discord_Database()
 
         self.commands = {}
-        for i in self.instructions:
+        for i in Bot.INSTRUCTIONS:
             try:
                 cmd = i(config)
                 for c in cmd.commands:
@@ -57,13 +56,17 @@ class Bot():
             except AssertionError:
                 utilities.log_message(f'{i} disabled.')
 
-        patterns = self.patterns
         self.patterns = []
-        for p in patterns:
+        for p in Bot.PATTERNS:
             try:
                 self.patterns.append(p(config))
             except AssertionError:
                 utilities.log_message(f'{p} disabled.')
+
+        self.reaction_handlers = []
+        for h in self.patterns + list(self.commands.values()):
+            if h.monitors_reactions:
+                self.reaction_handlers.append(h)
 
         self.token = config['token']
 
@@ -156,6 +159,16 @@ class Bot():
                 utilities.log_message('Couldn\'t find message to delete. ' + \
                     'Already gone?')
 
+    async def handle_reaction(self, reaction, user):
+        if reaction.me or user == client.user or \
+            reaction.message.author != client.user:
+            
+            return
+
+        for h in self.reaction_handlers:
+            if reaction.message.id in h.reaction_targets:
+                await h.handle_reaction(reaction, user)
+
     def log_message(self, message):
         guild_string = message.guild
         if guild_string is None:
@@ -170,6 +183,7 @@ class Bot():
 
 intents = discord.Intents.default()
 intents.members = True
+intents.reactions = True
 
 loop = asyncio.get_event_loop()
 client = discord.Client(loop=loop, intents=intents)
@@ -178,6 +192,10 @@ bot = Bot(client, loop=loop)
 @client.event
 async def on_message(message):
     await bot.handle_command(message)
+
+@client.event
+async def on_reaction_add(reaction, user):
+    await bot.handle_reaction(reaction, user)
 
 @client.event
 async def on_ready():

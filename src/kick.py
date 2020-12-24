@@ -9,8 +9,7 @@ class Kick(commands.Command):
     THUMBNAIL_URL = 'https://i.imgur.com/9gEz9y4.jpg'
 
     def __init__(self, config):
-        super().__init__(config)
-        self.commands = ['--kick']
+        super().__init__(config, commands=['--kick'])
         self.interval = config['kick_interval']
         self.limit_channel = config['kick_limit_channel']
         self.votes = []
