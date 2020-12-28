@@ -11,7 +11,7 @@ import commands
 import database
 import kick
 import mcserv
-import roll
+import roller
 import scryfall
 import utilities
 
@@ -26,7 +26,7 @@ class Bot():
         mcserv.Minecraft,
         commands.No,
         commands.Reverse,
-        roll.RollCommand,
+        roller.RollCommand,
         commands.Spell,
         commands.VaporWave,
         commands.Weeb,

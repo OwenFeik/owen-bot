@@ -1,3 +1,4 @@
+git+git://github.com/OwenFeik/roll.git#egg=roll
 aiosqlite==0.15.0
 discord.py==1.5.1
 emoji==0.5.4
