@@ -137,8 +137,8 @@ class CardList():
 
     def select_option(self, index):
         if index >= len(self.results):
-            raise IndexError(f'Can\'t select option {index} as list has only '
-                f'{len(self.results)} entries.')
+            raise IndexError(f'Can\'t select option {index + 1} as list has '
+                f'only {len(self.results)} entries.')
         else:
             return self.results[index]
 
@@ -328,7 +328,7 @@ class ScryfallHandler(commands.Pattern):
         'heavy_multiplication_x',
         'cross_mark_button'
     ]
-    MESSAGE_CACHE_SIZE = 5 # number of messages to remember in each channel.
+    MESSAGE_CACHE_SIZE = 20 # number of messages to remember in each channel.
 
     def __init__(self, config):
         assert config['scryfall']
@@ -342,9 +342,10 @@ class ScryfallHandler(commands.Pattern):
         self.sent_channels = {}
 
     async def handle(self, message):
-        queries = get_queries(message.content)
-        for query in queries:
-            await self.send(query.get_result(), message.channel)
+        async with message.channel.typing():
+            results = [q.get_result() for q in get_queries(message.content)]
+        for result in results:
+            await self.send(result, message.channel)
 
     async def handle_reaction(self, reaction, _):
         if reaction.message.id not in self.sent:
@@ -410,8 +411,16 @@ class ScryfallHandler(commands.Pattern):
             ScryfallHandler.MESSAGE_CACHE_SIZE:
 
             message_id = self.sent_channels[message.channel.id].pop(0)
-            del self.sent[message_id]
-            self.reaction_targets.remove(message_id)
+
+            try:
+                del self.sent[message_id]
+            except KeyError:
+                pass
+
+            try:
+                self.reaction_targets.remove(message_id)
+            except ValueError:
+                pass
 
     async def send(self, content, channel):
         if type(content) == str:
