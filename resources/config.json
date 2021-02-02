@@ -7,7 +7,7 @@
     "scryfall": true,
     "dnd_spells": true,
     "dnd_campaign": true,
-    "spellbook_url": "https://raw.githubusercontent.com/OwenFeik/spells/master/resources/spells.json",
+    "spellbook_url": "https://raw.githubusercontent.com/OwenFeik/spells_data/master/spells.json",
     "creeper": true,
     "token": "Your discord authtoken here.",
     "db_file": "resources/bot.db",
