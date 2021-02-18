@@ -20,6 +20,7 @@ class Bot():
         commands.About,
         commands.Blackletter,
         campaign.CampaignSwitcher,
+        commands.Creature,
         commands.Hello,
         commands.Help,
         kick.Kick,
@@ -133,15 +134,29 @@ class Bot():
 
         if not cmd.will_send:
             try:
-                if type(resp) == str:
+                if type(resp) is str:
                     await message.channel.send(resp)
-                elif type(resp) == discord.Embed:
+                elif type(resp) is discord.Embed:
                     await message.channel.send(embed=resp)
+                elif type(resp) is list:
+                    for e in resp:
+                        if type(e) is str:
+                            await message.channel.send(e)
+                        elif type(e) is discord.Embed:
+                            await message.channel.send(embed=e)
+                        else:
+                            utilities.log_message('List from command '
+                                f'"{message.content}" contained strange type: '
+                                f'{type(resp)}.')
+                            await message.channel.send(
+                                'Ran into an issue with that command. '
+                                '@Owen to report.'
+                            )
                 else:
                     utilities.log_message('Got strange type from command ' + \
                         f'"{message.content}": {type(resp)}.')
                     await message.channel.send(
-                        'Ran into an issue with that command.'
+                        'Ran into an issue with that command. @Owen to report.'
                     )
             except Exception as e:
                 utilities.log_message(f'Ran into issue sending response: {e}')

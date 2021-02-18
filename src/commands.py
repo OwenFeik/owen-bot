@@ -4,6 +4,7 @@ import re
 
 import discord
 
+import bestiary
 import spellbook
 import utilities
 import wordart
@@ -79,6 +80,17 @@ class Blackletter(Command):
         self.delete_message = True
         return wordart.blackletter(argument)
 
+class Creature(Command):
+    def __init__(self, config):
+        assert config['dnd_bestiary']
+        super().__init__(config, commands=['--creature'])
+        self.bestiary = bestiary.Bestiary(config['bestiary_url'])
+    
+    async def _handle(self, argument):
+        if argument == '':
+            return 'Usage: `--creature <creature name>`.'
+        return self.bestiary.handle_command(argument)
+        
 class Creeper(Pattern):
     def __init__(self, config):
         assert config['creeper']

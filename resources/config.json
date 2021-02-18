@@ -6,6 +6,7 @@
     "xkcd_interval": 1800,
     "scryfall": true,
     "dnd_spells": true,
+    "dnd_bestiary": true,
     "dnd_campaign": true,
     "spellbook_url": "https://raw.githubusercontent.com/OwenFeik/spells_data/master/bestiary.json",
     "bestiary_url": "https://raw.githubusercontent.com/OwenFeik/spells_data/master/bestiary.json",
