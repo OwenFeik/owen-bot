@@ -15,7 +15,8 @@ import roller
 import scryfall
 import utilities
 
-class Bot():
+
+class Bot:
     INSTRUCTIONS = [
         commands.About,
         commands.Blackletter,
@@ -32,18 +33,14 @@ class Bot():
         commands.VaporWave,
         commands.Weeb,
         commands.WordArt,
-        commands.XKCD
+        commands.XKCD,
     ]
 
-    PATTERNS = [
-        commands.Creeper,
-        commands.JoJo,
-        scryfall.ScryfallHandler
-    ]
+    PATTERNS = [commands.Creeper, commands.JoJo, scryfall.ScryfallHandler]
 
     def __init__(self, client, loop):
         config = utilities.load_config()
-        config['client'] = client
+        config["client"] = client
         self.client = client
 
         self.db = database.Discord_Database()
@@ -55,24 +52,24 @@ class Bot():
                 for c in cmd.commands:
                     self.commands[c] = cmd
             except AssertionError:
-                utilities.log_message(f'{i} disabled.')
+                utilities.log_message(f"{i} disabled.")
 
         self.patterns = []
         for p in Bot.PATTERNS:
             try:
                 self.patterns.append(p(config))
             except AssertionError:
-                utilities.log_message(f'{p} disabled.')
+                utilities.log_message(f"{p} disabled.")
 
         self.reaction_handlers = []
         for h in self.patterns + list(self.commands.values()):
             if h.monitors_reactions:
                 self.reaction_handlers.append(h)
 
-        self.token = config['token']
+        self.token = config["token"]
 
-        loop.run_until_complete(database.init_db(config['db_file']))
-        
+        loop.run_until_complete(database.init_db(config["db_file"]))
+
     def start(self):
         client.run(self.token)
 
@@ -86,19 +83,19 @@ class Bot():
         self.log_message(message)
 
         cmd = None
-        if message.content.startswith('--'):
-            match = re.search(r'^--[a-zA-Z]+', message.content.lower())
+        if message.content.startswith("--"):
+            match = re.search(r"^--[a-zA-Z]+", message.content.lower())
 
             if match is None:
                 await message.channel.send(
-                    'Commands are called via `--<command>`. Try `--all` ' + \
-                    'to see a list of commands or `--help` for further assistance.'
+                    "Commands are called via `--<command>`. Try `--all` "
+                    + "to see a list of commands or `--help` for further assistance."
                 )
                 return
 
             cmd_str = match.group(0)
-            if cmd_str == '--all':
-                await message.channel.send('\n'.join(self.commands))
+            if cmd_str == "--all":
+                await message.channel.send("\n".join(self.commands))
                 return
             elif cmd_str in self.commands:
                 cmd = self.commands[match.group(0)]
@@ -106,13 +103,13 @@ class Bot():
                 suggestions = difflib.get_close_matches(cmd_str, self.commands)
                 if suggestions:
                     await message.channel.send(
-                        f'Command `{cmd_str}` doesn\'t exist. ' + \
-                        f'Perhaps you meant `{suggestions[0]}`?'
+                        f"Command `{cmd_str}` doesn't exist. "
+                        + f"Perhaps you meant `{suggestions[0]}`?"
                     )
                 else:
                     await message.channel.send(
-                        f'Command `{cmd_str}` doesn\'t exist. Try `--all` ' + \
-                        'to see a list of commands.'
+                        f"Command `{cmd_str}` doesn't exist. Try `--all` "
+                        + "to see a list of commands."
                     )
                 return
         else:
@@ -125,11 +122,10 @@ class Bot():
         try:
             resp = await cmd.handle(message)
         except Exception as e:
-            utilities.log_message('Ran into issue handling command ' + \
-                f'{message.content}: {e}')
-            await message.channel.send(
-                'Ran into an issue with that command.'
+            utilities.log_message(
+                "Ran into issue handling command " + f"{message.content}: {e}"
             )
+            await message.channel.send("Ran into an issue with that command.")
             return
 
         if not cmd.will_send:
@@ -145,39 +141,45 @@ class Bot():
                         elif type(e) is discord.Embed:
                             await message.channel.send(embed=e)
                         else:
-                            utilities.log_message('List from command '
+                            utilities.log_message(
+                                "List from command "
                                 f'"{message.content}" contained strange type: '
-                                f'{type(resp)}.')
+                                f"{type(resp)}."
+                            )
                             await message.channel.send(
-                                'Ran into an issue with that command. '
-                                '@Owen to report.'
+                                "Ran into an issue with that command. "
+                                "@Owen to report."
                             )
                 else:
-                    utilities.log_message('Got strange type from command ' + \
-                        f'"{message.content}": {type(resp)}.')
+                    utilities.log_message(
+                        "Got strange type from command "
+                        + f'"{message.content}": {type(resp)}.'
+                    )
                     await message.channel.send(
-                        'Ran into an issue with that command. @Owen to report.'
+                        "Ran into an issue with that command. @Owen to report."
                     )
             except Exception as e:
-                utilities.log_message(f'Ran into issue sending response: {e}')
-                await message.channel.send('Failed to send response. ' + \
-                    '@Owen to report.')
-        
+                utilities.log_message(f"Ran into issue sending response: {e}")
+                await message.channel.send(
+                    "Failed to send response. " + "@Owen to report."
+                )
+
         if cmd.delete_message:
             try:
                 await message.delete()
-                utilities.log_message('Deleted command message.')
+                utilities.log_message("Deleted command message.")
             except discord.errors.Forbidden:
-                utilities.log_message('Couldn\'t delete command message; ' + \
-                    'insufficient permissions.')
+                utilities.log_message(
+                    "Couldn't delete command message; " + "insufficient permissions."
+                )
             except discord.errors.NotFound:
-                utilities.log_message('Couldn\'t find message to delete. ' + \
-                    'Already gone?')
+                utilities.log_message(
+                    "Couldn't find message to delete. " + "Already gone?"
+                )
 
     async def handle_reaction(self, reaction, user):
-        if reaction.me or user == client.user or \
-            reaction.message.author != client.user:
-            
+        if reaction.me or user == client.user or reaction.message.author != client.user:
+
             return
 
         for h in self.reaction_handlers:
@@ -187,14 +189,18 @@ class Bot():
     def log_message(self, message):
         guild_string = message.guild
         if guild_string is None:
-            guild_string = 'me'
+            guild_string = "me"
 
         if message.content:
-            utilities.log_message(message.author.display_name + \
-                f' sent "{message.content}" to {guild_string}.')
+            utilities.log_message(
+                message.author.display_name
+                + f' sent "{message.content}" to {guild_string}.'
+            )
         else:
-            utilities.log_message(message.author.display_name + \
-                f' sent an attachment to {guild_string}.')
+            utilities.log_message(
+                message.author.display_name + f" sent an attachment to {guild_string}."
+            )
+
 
 intents = discord.Intents.default()
 intents.members = True
@@ -202,24 +208,27 @@ intents.reactions = True
 
 loop = asyncio.get_event_loop()
 client = discord.Client(
-    loop=loop,
-    intents=intents,
-    activity=discord.Activity(name='you try --help', type=3)
+    loop=loop, intents=intents, activity=discord.Activity(name="you try --help", type=3)
 )
 bot = Bot(client, loop=loop)
+
 
 @client.event
 async def on_message(message):
     await bot.handle_command(message)
 
+
 @client.event
 async def on_reaction_add(reaction, user):
     await bot.handle_reaction(reaction, user)
 
+
 @client.event
 async def on_ready():
-    utilities.log_message(f'Logged in as {client.user.name},' + \
-        f' ID: {client.user.id}')
-    utilities.log_message('==== BEGIN LOG ====')
+    utilities.log_message(
+        f"Logged in as {client.user.name}," + f" ID: {client.user.id}"
+    )
+    utilities.log_message("==== BEGIN LOG ====")
+
 
 bot.start()
