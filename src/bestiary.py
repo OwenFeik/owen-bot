@@ -47,7 +47,7 @@ class Bestiary:
             inline=True,
         )
         section_title = lambda n: e.add_field(
-            name=n + " |" + HORIZONTAL_LINE,
+            name=f"{n} {HORIZONTAL_LINE}",
             value=ZERO_WIDTH_SPACE,
             inline=False,
         )
@@ -94,6 +94,12 @@ class Bestiary:
                 name="Languages",
                 value=", ".join(beast["languages"]),
                 inline=False,
+            )
+        if beast["senses"] is not None:
+            e.add_field(
+                name="Senses",
+                value=", ".join(beast["senses"]),
+                inline=False
             )
 
         field_sections = [
