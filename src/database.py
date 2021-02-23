@@ -89,7 +89,9 @@ class Database:
                 ") SELECT * FROM campaigns;"
             )
             await self.execute("DROP TABLE campaigns;")
-            await self.execute("ALTER TABLE _new_campaigns RENAME TO campaigns;")
+            await self.execute(
+                "ALTER TABLE _new_campaigns RENAME TO campaigns;"
+            )
             await self.execute("PRAGMA foreign_keys = ON;")
             await self.execute(
                 "ALTER TABLE rolls ADD COLUMN campaign INTEGER REFERENCES "
@@ -184,7 +186,9 @@ class Roll_Database(Interface):
         )
 
     async def get_campaign_rolls(self, user, server):
-        campaign_id, campaign_name = await self.get_active_campaign(user, server.id)
+        campaign_id, campaign_name = await self.get_active_campaign(
+            user, server.id
+        )
 
         return (
             await database.execute(
@@ -291,7 +295,9 @@ class Campaign_Database(Interface):
 
     async def get_campaign_names(self, server):
         return await database.execute(
-            "SELECT name FROM campaigns WHERE server = ?;", (server,), TransTypes.GETALL
+            "SELECT name FROM campaigns WHERE server = ?;",
+            (server,),
+            TransTypes.GETALL,
         )
 
     async def get_reminders(self, period, delta):

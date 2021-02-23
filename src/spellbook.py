@@ -88,7 +88,9 @@ class Spell:
             for d in descs[1:]:
                 e.add_field(name="\u200b", value=d, inline=False)
         if self.classes:
-            e.add_field(name="Classes", value=", ".join(self.classes), inline=False)
+            e.add_field(
+                name="Classes", value=", ".join(self.classes), inline=False
+            )
 
         return e
 

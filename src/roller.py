@@ -85,7 +85,9 @@ class RollCommand(commands.Command):
             await channel.send(embed=e)
         elif string == "campaign stats":
             try:
-                rolls, campaign_name = await self.db.get_campaign_rolls(user, server)
+                rolls, campaign_name = await self.db.get_campaign_rolls(
+                    user, server
+                )
             except ValueError:
                 self.delete_message = False
                 await channel.send(
@@ -104,7 +106,9 @@ class RollCommand(commands.Command):
             if server == None:
                 await channel.send("I don't track stats in DMs sorry.")
             await self.db.reset_rolls(user, server)
-            await channel.send(f"Your stored rolls on {server.name} have been deleted.")
+            await channel.send(
+                f"Your stored rolls on {server.name} have been deleted."
+            )
         else:
             self.delete_message = False
             await channel.send("I didn't understand that. Try `--help roll`.")
@@ -158,7 +162,9 @@ def stats_embed(data, mention):
         die_avg = (die + 1) / 2
         avg = round(sum(rolls) / len(rolls), 1) if rolls else 0
         delta = round(avg - die_avg, 1) if rolls else 0
-        delta_string = f"+{delta}" if delta > 0 else str(delta) if delta < 0 else "avg"
+        delta_string = (
+            f"+{delta}" if delta > 0 else str(delta) if delta < 0 else "avg"
+        )
 
         embed.add_field(
             name=f"d{die} ({len(rolls)} rolled)",

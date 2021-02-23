@@ -28,7 +28,8 @@ class Kick(commands.Command):
 
         if type(target) != discord.Member:
             return (
-                "Sorry, I can't find voice information for " f"{target.display_name}."
+                "Sorry, I can't find voice information for "
+                f"{target.display_name}."
             )
 
         if self.on_cooldown(target):
@@ -41,11 +42,15 @@ class Kick(commands.Command):
         if target.voice is None:
             return f"{target.display_name} isn't in a voice channel."
         if message.author.voice is None:
-            return "You can't kick people you aren't " "in a voice channel with!"
+            return (
+                "You can't kick people you aren't " "in a voice channel with!"
+            )
 
         channel = target.voice.channel
         if channel is None or channel != message.author.voice.channel:
-            return "You can't kick people you aren't " "in a voice channel with!"
+            return (
+                "You can't kick people you aren't " "in a voice channel with!"
+            )
 
         voice_members = sum([1 if not m.bot else 0 for m in channel.members])
         if voice_members < 3:
@@ -60,7 +65,9 @@ class Kick(commands.Command):
 
         if vote_count >= required_votes:
             try:
-                await target.move_to(None, reason="Democracy is a beautiful thing.")
+                await target.move_to(
+                    None, reason="Democracy is a beautiful thing."
+                )
                 self.cooldown.append((target, time.time()))
             except discord.Forbidden:
                 return "Tragically, I don't have permission to do that."
@@ -91,7 +98,9 @@ class Kick(commands.Command):
 
     def scrub_cooldown(self):
         t = time.time()
-        self.cooldown = [(tg, tm) for tg, tm in self.cooldown if t - tm < self.interval]
+        self.cooldown = [
+            (tg, tm) for tg, tm in self.cooldown if t - tm < self.interval
+        ]
 
     def on_cooldown(self, user):
         for c in self.cooldown:

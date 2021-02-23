@@ -177,7 +177,8 @@ class JoJo(Pattern):
 
     async def handle(self, message):
         return discord.Embed(
-            description=message.author.mention + ", there's something you should know."
+            description=message.author.mention
+            + ", there's something you should know."
         ).set_image(url=Weeb.IMAGE_URL)
 
 

@@ -32,7 +32,9 @@ set_log_file = logger.set_path
 def load_config():  # Load the config file
     try:
         with open("resources/config.json", "r") as f:
-            return json.load(f)  # And return a dictionary with the relevant points
+            return json.load(
+                f
+            )  # And return a dictionary with the relevant points
     except FileNotFoundError:
         log_message("No config file found. Exiting.")
         raise SystemExit
@@ -131,7 +133,9 @@ def parse_time(string):
         minutes = int(minutes)
         seconds = int(seconds[0]) if seconds else 0
         time_range_check(hours, minutes, seconds)
-        return hours * 3600 + minutes * 60 + (0 if period == "am" else 3600 * 12)
+        return (
+            hours * 3600 + minutes * 60 + (0 if period == "am" else 3600 * 12)
+        )
     elif re.match(r"^\d{1,2} ?(pm|am)$", string):
         string, period = string[:-2], string[-2:]
         hours = int(string.strip())
@@ -184,12 +188,16 @@ async def get_member(guild, member_id):
                 f'{member_id} in guild "{guild.name}": {e}'
             )
         except discord.HTTPException as e:
-            log_message(f"Failed to find member {member_id} in {guild.name}: {e}")
+            log_message(
+                f"Failed to find member {member_id} in {guild.name}: {e}"
+            )
     return member
 
 
 def is_guild_owner(guild, member_id):
-    return (guild.owner and guild.owner.id == member_id) or guild.owner_id == member_id
+    return (
+        guild.owner and guild.owner.id == member_id
+    ) or guild.owner_id == member_id
 
 
 def get_emoji_name(discord_emoji):

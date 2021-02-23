@@ -41,7 +41,9 @@ class xkcd:
         return strip
 
     def get_uri_alt(self):
-        r = requests.get(f"http://xkcd.com/{self.idno}")  # Grab source of comic's page
+        r = requests.get(
+            f"http://xkcd.com/{self.idno}"
+        )  # Grab source of comic's page
         src = r.content.decode()  # Decode from raw binary
 
         uri = re.search(
@@ -100,12 +102,18 @@ async def update_db(loop):
     )  # Grab sections of html containing names
     xkcds = []
     for name in raw_names:
-        strip = xkcd.from_raw_name(name)  # Create an xkcd object from the raw data
-        if not strip.name in current:  # We only need to add comics we don't have
+        strip = xkcd.from_raw_name(
+            name
+        )  # Create an xkcd object from the raw data
+        if (
+            not strip.name in current
+        ):  # We only need to add comics we don't have
             xkcds.append(strip)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-        calls = [loop.run_in_executor(executor, strip.get_uri_alt) for strip in xkcds]
+        calls = [
+            loop.run_in_executor(executor, strip.get_uri_alt) for strip in xkcds
+        ]
 
     strips = await asyncio.gather(*calls)
 
@@ -152,7 +160,9 @@ def update_db_schedule(interval, client):
 
 
 def start_db_thread(interval, client):
-    thread = threading.Thread(target=update_db_schedule, args=[interval, client])
+    thread = threading.Thread(
+        target=update_db_schedule, args=[interval, client]
+    )
     thread.start()
     utilities.log_message("Started XKCD update thread.")
 

@@ -170,7 +170,8 @@ class Bot:
                 utilities.log_message("Deleted command message.")
             except discord.errors.Forbidden:
                 utilities.log_message(
-                    "Couldn't delete command message; " + "insufficient permissions."
+                    "Couldn't delete command message; "
+                    + "insufficient permissions."
                 )
             except discord.errors.NotFound:
                 utilities.log_message(
@@ -178,7 +179,11 @@ class Bot:
                 )
 
     async def handle_reaction(self, reaction, user):
-        if reaction.me or user == client.user or reaction.message.author != client.user:
+        if (
+            reaction.me
+            or user == client.user
+            or reaction.message.author != client.user
+        ):
 
             return
 
@@ -198,7 +203,8 @@ class Bot:
             )
         else:
             utilities.log_message(
-                message.author.display_name + f" sent an attachment to {guild_string}."
+                message.author.display_name
+                + f" sent an attachment to {guild_string}."
             )
 
 
@@ -208,7 +214,9 @@ intents.reactions = True
 
 loop = asyncio.get_event_loop()
 client = discord.Client(
-    loop=loop, intents=intents, activity=discord.Activity(name="you try --help", type=3)
+    loop=loop,
+    intents=intents,
+    activity=discord.Activity(name="you try --help", type=3),
 )
 bot = Bot(client, loop=loop)
 

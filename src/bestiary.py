@@ -18,7 +18,9 @@ class Bestiary:
             raise ValueError
 
     def get_beast(self, query):
-        beast = difflib.get_close_matches(query.lower(), self.bestiary.keys(), 1)
+        beast = difflib.get_close_matches(
+            query.lower(), self.bestiary.keys(), 1
+        )
         if beast:
             return self.bestiary[beast[0]]
         else:
@@ -45,7 +47,9 @@ class Bestiary:
             inline=True,
         )
         section_title = lambda n: e.add_field(
-            name=n + " |" + HORIZONTAL_LINE, value=ZERO_WIDTH_SPACE, inline=False
+            name=n + " |" + HORIZONTAL_LINE,
+            value=ZERO_WIDTH_SPACE,
+            inline=False,
         )
 
         inline_field("Size")
@@ -67,7 +71,10 @@ class Bestiary:
             e.add_field(
                 name="Saving Throws",
                 value=", ".join(
-                    [f'{s.capitalize()} {beast["saves"][s]}' for s in beast["saves"]]
+                    [
+                        f'{s.capitalize()} {beast["saves"][s]}'
+                        for s in beast["saves"]
+                    ]
                 ),
                 inline=False,
             )
@@ -75,13 +82,18 @@ class Bestiary:
             e.add_field(
                 name="Skills",
                 value=", ".join(
-                    [f'{s.capitalize()} {beast["skills"][s]}' for s in beast["skills"]]
+                    [
+                        f'{s.capitalize()} {beast["skills"][s]}'
+                        for s in beast["skills"]
+                    ]
                 ),
                 inline=False,
             )
         if beast["languages"] is not None:
             e.add_field(
-                name="Languages", value=", ".join(beast["languages"]), inline=False
+                name="Languages",
+                value=", ".join(beast["languages"]),
+                inline=False,
             )
 
         field_sections = [
@@ -89,7 +101,12 @@ class Bestiary:
             for s in ["Traits", "Actions", "Legendary Actions"]
         ]
         if (
-            sum([len(beast[k]) if beast[k] != None else 0 for _, k in field_sections])
+            sum(
+                [
+                    len(beast[k]) if beast[k] != None else 0
+                    for _, k in field_sections
+                ]
+            )
             + len(e.fields)
             < 25
         ):
@@ -98,7 +115,9 @@ class Bestiary:
                 if beast[key]:
                     section_title(section)
                     for t in beast[key]:
-                        e.add_field(name=t["name"], value=t["text"], inline=False)
+                        e.add_field(
+                            name=t["name"], value=t["text"], inline=False
+                        )
 
             ret = e
         else:

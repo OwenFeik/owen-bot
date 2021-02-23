@@ -22,7 +22,8 @@ def translate(string, replacement):
     for c in string.lower():
         if not c in wa_alphabet:
             return (
-                f'Sorry, character "{c}" not available, ' + "only letters can be used."
+                f'Sorry, character "{c}" not available, '
+                + "only letters can be used."
             )
         letters.append(wa_alphabet[c])
 
@@ -30,7 +31,9 @@ def translate(string, replacement):
 
     for line in range(5):
         for letter in letters:
-            output += letter[line].replace(" ", "      ").replace("?", replacement)
+            output += (
+                letter[line].replace(" ", "      ").replace("?", replacement)
+            )
             output += "    "
         output += "\n"
 

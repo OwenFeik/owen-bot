@@ -64,7 +64,8 @@ class Add(CampaignCommand):
     async def _handle(self, _guild, campaign, _arg, target):
         if target.id in campaign.players:
             return (
-                f"{target.display_name} is already in campaign " + f"{campaign.name}."
+                f"{target.display_name} is already in campaign "
+                + f"{campaign.name}."
             )
 
         campaign.add_player(target.id)
@@ -74,7 +75,9 @@ class Add(CampaignCommand):
 
 class Day(CampaignCommand):
     def __init__(self, config):
-        super().__init__(config, commands=["day"], needs_campaign=True, needs_dm=True)
+        super().__init__(
+            config, commands=["day"], needs_campaign=True, needs_dm=True
+        )
 
     async def _handle(self, _guild, campaign, arg, _target):
         if arg.lower() == "none":
@@ -138,7 +141,9 @@ class List(CampaignCommand):
         super().__init__(config, commands=["list"])
 
     async def _handle(self, guild, _campaign, _arg, _target):
-        campaigns = [t[0] for t in await self.meta.db.get_campaign_names(guild.id)]
+        campaigns = [
+            t[0] for t in await self.meta.db.get_campaign_names(guild.id)
+        ]
         if campaigns == []:
             return "There are no campaigns on this server."
         else:
@@ -224,7 +229,9 @@ class New(CampaignCommand):
 
 class Nick(CampaignCommand):
     def __init__(self, config):
-        super().__init__(config, commands=["nick", "setnick"], needs_campaign=True)
+        super().__init__(
+            config, commands=["nick", "setnick"], needs_campaign=True
+        )
 
         self.regex = f'^--dnd ({"|".join(self.commands)})'
         self.nick_regex = re.compile(r"^[\w\- ]{1,32}$")
@@ -252,7 +259,10 @@ class Nick(CampaignCommand):
                     "`--dnd add <mention>` or they can join with `--dnd join`."
                 )
 
-            if message.author.id in [campaign.dm, target.id] or campaign.dm == None:
+            if (
+                message.author.id in [campaign.dm, target.id]
+                or campaign.dm == None
+            ):
 
                 for uid in message.raw_mentions:
                     nick = nick.replace(f"<@{uid}>", "")
@@ -288,7 +298,8 @@ class Nick(CampaignCommand):
         if utilities.is_guild_owner(message.guild, target.id):
             if target.id == message.author.id:
                 return (
-                    "You are the server owner which means I can't " "set your nickname."
+                    "You are the server owner which means I can't "
+                    "set your nickname."
                 )
             else:
                 return (
@@ -310,7 +321,10 @@ class Nick(CampaignCommand):
 
         campaign.set_nick(target.id, nick)
         await self.meta.db.add_campaign(campaign)
-        return f"Set the nickname for {target.name} " f"in {campaign.name} to {nick}."
+        return (
+            f"Set the nickname for {target.name} "
+            f"in {campaign.name} to {nick}."
+        )
 
 
 class Notify(CampaignCommand):
@@ -369,7 +383,10 @@ class Remove(CampaignCommand):
 
     async def _handle(self, _guild, campaign, _arg, target):
         if target.id not in campaign.players:
-            return f"{target.display_name} is not in campaign " + f"{campaign.name}."
+            return (
+                f"{target.display_name} is not in campaign "
+                + f"{campaign.name}."
+            )
 
         campaign.remove_player(target.id)
         await self.meta.db.add_campaign(campaign)
@@ -430,7 +447,9 @@ class SetDM(CampaignCommand):
 
 class Time(CampaignCommand):
     def __init__(self, config):
-        super().__init__(config, commands=["time"], needs_campaign=True, needs_dm=True)
+        super().__init__(
+            config, commands=["time"], needs_campaign=True, needs_dm=True
+        )
 
     async def _handle(self, _guild, campaign, arg, _target):
         if arg.lower() == "none":
@@ -563,7 +582,9 @@ class CampaignSwitcher(commands.Command):
         campaign = await self.get_active_campaign(message.guild.id)
         text = message.content[len(self.commands[0]) :].strip()
 
-        option = re.search(r"^--dnd (?P<opt>[a-zA-Z]+)", message.content.lower())
+        option = re.search(
+            r"^--dnd (?P<opt>[a-zA-Z]+)", message.content.lower()
+        )
 
         if option == None:
             if campaign is not None:
@@ -653,7 +674,9 @@ class CampaignSwitcher(commands.Command):
         #     campaign.remove_player(p)
 
     async def get_dm_role(self, server):
-        dm_role = discord.utils.find(lambda r: r.name == self.dm_role, server.roles)
+        dm_role = discord.utils.find(
+            lambda r: r.name == self.dm_role, server.roles
+        )
 
         if dm_role is None:
             dm_role = await server.create_role(
@@ -686,7 +709,8 @@ class CampaignSwitcher(commands.Command):
         except AttributeError:
             # didn't find dm for some reason
             utilities.log_message(
-                f"Failed to find DM for campaign {campaign.name} in " f"{guild.name}."
+                f"Failed to find DM for campaign {campaign.name} in "
+                f"{guild.name}."
             )
 
     async def apply_campaign(self, server):

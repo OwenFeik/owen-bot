@@ -45,7 +45,9 @@ class Card:
             self.set_embed_style(style)
 
         embed = discord.Embed(
-            title=self.name, description=self.price, colour=self.get_embed_colour()
+            title=self.name,
+            description=self.price,
+            colour=self.get_embed_colour(),
         )
 
         if self.embed_style == "thumbnail":
@@ -58,7 +60,9 @@ class Card:
 
 class BackFace(Card):
     def __init__(self, name, uri, front_face):
-        super().__init__(name, uri, "", front_face.colour_id, front_face.embed_style)
+        super().__init__(
+            name, uri, "", front_face.colour_id, front_face.embed_style
+        )
         self.front_face = front_face
         self.other_face = front_face
 
@@ -71,7 +75,8 @@ class DoubleFacedCard(Card):
 
     def __repr__(self):
         return (
-            f"<DoubleFaced{super().__repr__()[1:-1]} " f"back_face: {self.back_face}>"
+            f"<DoubleFaced{super().__repr__()[1:-1]} "
+            f"back_face: {self.back_face}>"
         )
 
     def get_embeds(self, style=None):
@@ -94,7 +99,9 @@ def card_from_scryfall_response(data):
 
     if "card_faces" in data and "image_uris" in data["card_faces"][0]:
         names = [data["card_faces"][i]["name"] for i in range(0, 2)]
-        uris = [data["card_faces"][i]["image_uris"]["normal"] for i in range(0, 2)]
+        uris = [
+            data["card_faces"][i]["image_uris"]["normal"] for i in range(0, 2)
+        ]
         return DoubleFacedCard(names, uris, price, colour_id)
     else:
         name = data["name"]
@@ -106,7 +113,9 @@ class CardList:
     def __init__(self, cards, message, total_cards=None):
         self.cards = cards
         self.message = message
-        self.total_cards = total_cards if total_cards is not None else len(self.cards)
+        self.total_cards = (
+            total_cards if total_cards is not None else len(self.cards)
+        )
         self._results = None
 
     @property
@@ -122,7 +131,8 @@ class CardList:
 
     def get_embed(self):
         e = discord.Embed(
-            title=self.message, description="\n".join([c.name for c in self.results])
+            title=self.message,
+            description="\n".join([c.name for c in self.results]),
         )
         e.set_footer(text=f"{len(self.results)} of {self.total_cards} results.")
 
@@ -251,7 +261,9 @@ class ScryfallRequest:
     def get_search_results(self):
         return self.perform_request(
             ScryfallRequest.QUERIES["search"].format(self.query),
-            ScryfallRequest.FAILURE_MESSAGE.format("any cards matching this search."),
+            ScryfallRequest.FAILURE_MESSAGE.format(
+                "any cards matching this search."
+            ),
         )
 
     def resolve(self):
@@ -272,7 +284,8 @@ class ScryfallRequest:
 
         if self.result is None:
             utilities.log_message(
-                "Failed to find card while searching scryfall for " f'"{self.query}".'
+                "Failed to find card while searching scryfall for "
+                f'"{self.query}".'
             )
             return (
                 "Oops, something went wrong when I was looking for "
@@ -319,13 +332,20 @@ class ScryfallHandler(commands.Pattern):
         "microscope",
     ]
     SHRINK_EMOJIS = ["telescope", "pinching_hand"]
-    REMOVE_EMOJIS = ["cross_mark", "heavy_multiplication_x", "cross_mark_button"]
+    REMOVE_EMOJIS = [
+        "cross_mark",
+        "heavy_multiplication_x",
+        "cross_mark_button",
+    ]
     MESSAGE_CACHE_SIZE = 20  # number of messages to remember in each channel.
 
     def __init__(self, config):
         assert config["scryfall"]
         super().__init__(
-            config, regex=r"\[[^\[\]]+\]", will_send=True, monitors_reactions=True
+            config,
+            regex=r"\[[^\[\]]+\]",
+            will_send=True,
+            monitors_reactions=True,
         )
         self.sent = {}
         self.sent_channels = {}
@@ -427,7 +447,9 @@ class ScryfallHandler(commands.Pattern):
         elif type(content) == discord.Embed:
             await channel.send(embed=content)
         elif type(content) in [Card, CardList]:
-            self.log_sent(await channel.send(embed=content.get_embed()), content)
+            self.log_sent(
+                await channel.send(embed=content.get_embed()), content
+            )
         elif type(content) == DoubleFacedCard:
             front, back = content.get_embeds()
             self.log_sent(await channel.send(embed=front), content)
