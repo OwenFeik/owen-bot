@@ -301,7 +301,7 @@ def get_queries(message):
     message = re.sub(r"(?<!\\)`.*(?<!\\)`", "", message)
     for q in re.finditer(
         r"\[(?P<prefix>(\?!|!\?|[\?!])(?!\]))?"
-        r"(?P<query>[\w ,.:=!?&\'\/\-\"\(\)]+)(\|(?P<ed>[a-z0-9 \-]+))?\]",
+        r"(?P<query>[\w ,.:=!?&\'\/\-\"\(\)<>]+)(\|(?P<ed>[a-z0-9 \-]+))?\]",
         message,
         flags=re.IGNORECASE,
     ):
