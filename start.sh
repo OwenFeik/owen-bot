@@ -6,7 +6,7 @@ touch resources/.log
 
 systemctl is-active --quiet docker
 if [ $? != "0" ]; then
-	systemctl start docker
+	sudo systemctl start docker
 fi
 
 if sudo docker ps | grep -q "owen-bot"; then
