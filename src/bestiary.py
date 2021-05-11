@@ -29,7 +29,7 @@ class Bestiary:
     def handle_command(self, query):
         beast = self.get_beast(query)
         if beast is None:
-            return f'Sorry, I couldn\'t fine "{query}".'
+            return f'Sorry, I couldn\'t find "{query}".'
         else:
             return Bestiary.create_embed(beast)
 
