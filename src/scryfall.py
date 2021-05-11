@@ -110,21 +110,25 @@ def card_from_scryfall_response(data):
 
 
 class CardList:
-    def __init__(self, cards, message, total_cards=None):
+    def __init__(self, cards, message, total_cards=None, in_order=False):
         self.cards = cards
         self.message = message
         self.total_cards = (
             total_cards if total_cards is not None else len(self.cards)
         )
         self._results = None
+        self.in_order = in_order
 
     @property
     def results(self):
         if self._results is None:
             if len(self.cards) > 5:
-                self._results = self.cards[:]
-                random.shuffle(self.results)
-                self._results = sorted(self._results[:5], key=lambda c: c.name)
+                if self.in_order:
+                    return self.cards[:5]
+                else:
+                    results = self.cards[:]
+                    random.shuffle(results)
+                    self._results = sorted(results[:5], key=lambda c: c.name)
             else:
                 self._results = self.cards
         return self._results
@@ -148,11 +152,12 @@ class CardList:
             return self.results[index]
 
     @staticmethod
-    def from_scryfall_response(data, message):
+    def from_scryfall_response(data, message, in_order=False):
         return CardList(
             [card_from_scryfall_response(c) for c in data.get("data")],
             message,
             data.get("total_cards"),
+            in_order,
         )
 
 
@@ -176,6 +181,7 @@ class ScryfallRequest:
     ERROR_MESSAGE = "Something went wrong and I failed to {}"
     FAILURE_MESSAGE = "I'm afraid I couldn't find {}"
     SUGGEST_MESSAGE = FAILURE_MESSAGE + ". Perhaps you meant one of these?"
+    SCRYFALL_ORDER_KEYWORD = "order:"
 
     def __init__(self, query, ed, is_search=False, embed_style="thumbnail"):
         self.query = query
@@ -221,7 +227,11 @@ class ScryfallRequest:
                 self.result.set_embed_style(self.embed_style)
             else:
                 message = suggest if suggest is not None else ""
-                self.result = CardList.from_scryfall_response(resp, message)
+                self.result = CardList.from_scryfall_response(
+                    resp,
+                    message,
+                    in_order=ScryfallRequest.SCRYFALL_ORDER_KEYWORD in query,
+                )
 
         return self.result
 
