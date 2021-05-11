@@ -97,9 +97,7 @@ class Bestiary:
             )
         if beast["senses"] is not None:
             e.add_field(
-                name="Senses",
-                value=", ".join(beast["senses"]),
-                inline=False
+                name="Senses", value=", ".join(beast["senses"]), inline=False
             )
 
         field_sections = [
