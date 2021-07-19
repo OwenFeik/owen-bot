@@ -19,7 +19,9 @@ class Card:
         "C": discord.Colour.from_rgb(209, 213, 214),
     }
 
-    def __init__(self, name, uri, art_uri, price, colour_id, ed, embed_style="thumbnail"):
+    def __init__(
+        self, name, uri, art_uri, price, colour_id, ed, embed_style="thumbnail"
+    ):
         self.name = name
         self.uri = uri
         self.art_uri = art_uri
@@ -73,7 +75,13 @@ class Card:
 class BackFace(Card):
     def __init__(self, name, uri, art_uri, front_face):
         super().__init__(
-            name, uri, art_uri, "", front_face.colour_id, front_face.ed, front_face.embed_style
+            name,
+            uri,
+            art_uri,
+            "",
+            front_face.colour_id,
+            front_face.ed,
+            front_face.embed_style,
         )
         self.front_face = front_face
         self.other_face = front_face
@@ -81,8 +89,19 @@ class BackFace(Card):
 
 
 class DoubleFacedCard(Card):
-    def __init__(self, names, uris, art_uris, price, colour_id, ed, embed_style="thumbnail"):
-        super().__init__(names[0], uris[0], art_uris[0], price, colour_id, ed, embed_style)
+    def __init__(
+        self,
+        names,
+        uris,
+        art_uris,
+        price,
+        colour_id,
+        ed,
+        embed_style="thumbnail",
+    ):
+        super().__init__(
+            names[0], uris[0], art_uris[0], price, colour_id, ed, embed_style
+        )
         self.back_face = BackFace(names[1], uris[1], art_uris[1], self)
         self.other_face = self.back_face
 
@@ -113,7 +132,7 @@ def card_from_scryfall_response(data, art_crop=False):
 
     if "card_faces" in data and "image_uris" in data["card_faces"][0]:
         names = [data["card_faces"][i]["name"] for i in range(0, 2)]
-        
+
         uris = []
         art_uris = []
         for i in range(0, 2):
@@ -236,13 +255,17 @@ class ScryfallRequest:
         data_type = resp.get("object")
 
         if data_type == "card":
-            self.result = card_from_scryfall_response(resp, self.embed_style == "art")
+            self.result = card_from_scryfall_response(
+                resp, self.embed_style == "art"
+            )
             self.result.set_embed_style(self.embed_style)
         elif data_type == "list":
             cards = resp["data"]
 
             if len(cards) == 1:
-                self.result = card_from_scryfall_response(cards[0], self.embed_style == "art")
+                self.result = card_from_scryfall_response(
+                    cards[0], self.embed_style == "art"
+                )
                 self.result.set_embed_style(self.embed_style)
             else:
                 message = suggest if suggest is not None else ""
@@ -324,17 +347,18 @@ class ScryfallRequest:
         return self.result
 
 
-
 # All prefixes which can be constructed from the prefix characters
 #   - @ or art_crop
 #   - ! or full art
 #   - ? or is_search
-POSSIBLE_PREFIXES = r"@\?!|@!\?|!@\?|!\?@|\?!@|\?@!|@\?|@!|\?@|!@|\?!|!\?|[\?!@]"
+POSSIBLE_PREFIXES = (
+    r"@\?!|@!\?|!@\?|!\?@|\?!@|\?@!|@\?|@!|\?@|!@|\?!|!\?|[\?!@]"
+)
 QUERY_REGEX = re.compile(
     rf"\[(?P<prefix>{POSSIBLE_PREFIXES})?"
     r"(?P<query>[\w ,.:=!?&\'\/\-\"\(\)<>{}]+)"
     r"(\|(?P<ed>[a-z0-9 \-]+))?\]",
-    flags=re.IGNORECASE
+    flags=re.IGNORECASE,
 )
 
 
@@ -350,8 +374,9 @@ def get_queries(message):
         else:
             is_search = True if "?" in prefix else False
             embed_style = (
-                "art" if "@" in prefix else
-                ("full" if "!" in prefix else "thumbnail")
+                "art"
+                if "@" in prefix
+                else ("full" if "!" in prefix else "thumbnail")
             )
 
         query = q.group("query").strip()
@@ -372,7 +397,7 @@ class ScryfallHandler(commands.Pattern):
         "artist_palette",
         "adult::artist_palette",
         "man_artist",
-        "woman_artist"
+        "woman_artist",
     ]
     ENLARGE_EMOJIS = [
         "magnifying_glass_tilted_left",

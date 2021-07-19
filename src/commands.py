@@ -33,7 +33,7 @@ class Command:
     def remove_command_string(self, text):
         text_lower = text.lower()
         argument = text[
-            max([len(c) for c in self.commands if text_lower.startswith(c)]):
+            max([len(c) for c in self.commands if text_lower.startswith(c)]) :
         ].strip()
         return argument
 
