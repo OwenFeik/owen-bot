@@ -31,8 +31,9 @@ class Command:
         raise NotImplementedError()
 
     def remove_command_string(self, text):
+        text_lower = text.lower()
         argument = text[
-            max([len(c) for c in self.commands if text.lower().startswith(c)]) :
+            max([len(c) for c in self.commands if text_lower.startswith(c)]):
         ].strip()
         return argument
 
@@ -52,7 +53,7 @@ class Pattern(Command):
             raise ValueError("Can't create a pattern without a regex.")
 
         # Regular expression to match messages relevant to this command
-        self.regex = re.compile(regex)
+        self.regex = re.compile(regex) if isinstance(regex, str) else regex
 
 
 class About(Command):

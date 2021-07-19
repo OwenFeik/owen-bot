@@ -19,15 +19,21 @@ class Card:
         "C": discord.Colour.from_rgb(209, 213, 214),
     }
 
-    def __init__(self, name, uri, price, colour_id, embed_style="thumbnail"):
+    def __init__(self, name, uri, art_uri, price, colour_id, ed, embed_style="thumbnail"):
         self.name = name
         self.uri = uri
+        self.art_uri = art_uri
         self.price = price
         self.colour_id = colour_id if colour_id else []
+        self.ed = ed
         self.embed_style = embed_style
+        self.description = f"{self.ed} {self.price}"
 
     def __repr__(self):
-        return f"<Card name: {self.name} price: {self.price} uri: {self.uri}>"
+        return (
+            f"<Card name: {self.name} price: {self.price} uri: {self.uri} "
+            f"ed: {self.ed}>"
+        )
 
     def get_embed_colour(self):
         if len(self.colour_id) > 1:
@@ -44,9 +50,15 @@ class Card:
         if style is not None:
             self.set_embed_style(style)
 
+        if self.embed_style == "art":
+            return discord.Embed(
+                title=f"{self.name} ({self.ed})",
+                colour=self.get_embed_colour(),
+            ).set_image(url=self.art_uri)
+
         embed = discord.Embed(
             title=self.name,
-            description=self.price,
+            description=self.description,
             colour=self.get_embed_colour(),
         )
 
@@ -59,18 +71,19 @@ class Card:
 
 
 class BackFace(Card):
-    def __init__(self, name, uri, front_face):
+    def __init__(self, name, uri, art_uri, front_face):
         super().__init__(
-            name, uri, "", front_face.colour_id, front_face.embed_style
+            name, uri, art_uri, "", front_face.colour_id, front_face.ed, front_face.embed_style
         )
         self.front_face = front_face
         self.other_face = front_face
+        self.description = ""
 
 
 class DoubleFacedCard(Card):
-    def __init__(self, names, uris, price, colour_id, embed_style="thumbnail"):
-        super().__init__(names[0], uris[0], price, colour_id, embed_style)
-        self.back_face = BackFace(names[1], uris[1], self)
+    def __init__(self, names, uris, art_uris, price, colour_id, ed, embed_style="thumbnail"):
+        super().__init__(names[0], uris[0], art_uris[0], price, colour_id, ed, embed_style)
+        self.back_face = BackFace(names[1], uris[1], art_uris[1], self)
         self.other_face = self.back_face
 
     def __repr__(self):
@@ -93,20 +106,26 @@ def get_price_string(data):
     return f"${price}"
 
 
-def card_from_scryfall_response(data):
+def card_from_scryfall_response(data, art_crop=False):
     price = get_price_string(data)
     colour_id = data["color_identity"]
+    ed = data["set"].upper()
 
     if "card_faces" in data and "image_uris" in data["card_faces"][0]:
         names = [data["card_faces"][i]["name"] for i in range(0, 2)]
-        uris = [
-            data["card_faces"][i]["image_uris"]["normal"] for i in range(0, 2)
-        ]
-        return DoubleFacedCard(names, uris, price, colour_id)
+        
+        uris = []
+        art_uris = []
+        for i in range(0, 2):
+            uris.append(data["card_faces"][i]["image_uris"]["normal"])
+            art_uris.append(data["card_faces"][i]["image_uris"]["art_crop"])
+
+        return DoubleFacedCard(names, uris, art_uris, price, colour_id, ed)
     else:
         name = data["name"]
         uri = data["image_uris"]["normal"]
-        return Card(name, uri, price, colour_id)
+        art_uri = data["image_uris"]["art_crop"]
+        return Card(name, uri, art_uri, price, colour_id, ed)
 
 
 class CardList:
@@ -217,13 +236,13 @@ class ScryfallRequest:
         data_type = resp.get("object")
 
         if data_type == "card":
-            self.result = card_from_scryfall_response(resp)
+            self.result = card_from_scryfall_response(resp, self.embed_style == "art")
             self.result.set_embed_style(self.embed_style)
         elif data_type == "list":
             cards = resp["data"]
 
             if len(cards) == 1:
-                self.result = card_from_scryfall_response(cards[0])
+                self.result = card_from_scryfall_response(cards[0], self.embed_style == "art")
                 self.result.set_embed_style(self.embed_style)
             else:
                 message = suggest if suggest is not None else ""
@@ -305,23 +324,35 @@ class ScryfallRequest:
         return self.result
 
 
+
+# All prefixes which can be constructed from the prefix characters
+#   - @ or art_crop
+#   - ! or full art
+#   - ? or is_search
+POSSIBLE_PREFIXES = r"@\?!|@!\?|!@\?|!\?@|\?!@|\?@!|@\?|@!|\?@|!@|\?!|!\?|[\?!@]"
+QUERY_REGEX = re.compile(
+    rf"\[(?P<prefix>{POSSIBLE_PREFIXES})?"
+    r"(?P<query>[\w ,.:=!?&\'\/\-\"\(\)<>{}]+)"
+    r"(\|(?P<ed>[a-z0-9 \-]+))?\]",
+    flags=re.IGNORECASE
+)
+
+
 # Return query objects for each card found in the message
 def get_queries(message):
     queries = []
     message = re.sub(r"(?<!\\)`.*(?<!\\)`", "", message)
-    for q in re.finditer(
-        r"\[(?P<prefix>(\?!|!\?|[\?!])(?!\]))?"
-        r"(?P<query>[\w ,.:=!?&\'\/\-\"\(\)<>]+)(\|(?P<ed>[a-z0-9 \-]+))?\]",
-        message,
-        flags=re.IGNORECASE,
-    ):
+    for q in re.finditer(QUERY_REGEX, message):
         prefix = q.group("prefix")
         if prefix is None:
             is_search = False
             embed_style = "thumbnail"
         else:
             is_search = True if "?" in prefix else False
-            embed_style = "full" if "!" in prefix else "thumbnail"
+            embed_style = (
+                "art" if "@" in prefix else
+                ("full" if "!" in prefix else "thumbnail")
+            )
 
         query = q.group("query").strip()
         ed = q.group("ed")
@@ -336,18 +367,31 @@ def get_queries(message):
 class ScryfallHandler(commands.Pattern):
     # pylint: disable=abstract-method
 
+    ART_EMOJIS = [
+        "paintbrush",
+        "artist_palette",
+        "adult::artist_palette",
+        "man_artist",
+        "woman_artist"
+    ]
     ENLARGE_EMOJIS = [
         "magnifying_glass_tilted_left",
         "magnifying_glass_tilted_right",
         "microscope",
     ]
     SHRINK_EMOJIS = ["telescope", "pinching_hand"]
+    EMBED_EMOJI_MAPPING = {
+        "art": ART_EMOJIS,
+        "full": ENLARGE_EMOJIS,
+        "thumbnail": SHRINK_EMOJIS,
+    }
     REMOVE_EMOJIS = [
         "cross_mark",
         "heavy_multiplication_x",
         "cross_mark_button",
     ]
     MESSAGE_CACHE_SIZE = 20  # number of messages to remember in each channel.
+    BAD_QUERY_MESSAGE = "Illegal character in search string."
 
     def __init__(self, config):
         assert config["scryfall"]
@@ -363,21 +407,23 @@ class ScryfallHandler(commands.Pattern):
     async def handle(self, message):
         async with message.channel.typing():
             results = [q.get_result() for q in get_queries(message.content)]
-        for result in results:
-            await self.send(result, message.channel)
+        if results:
+            for result in results:
+                await self.send(result, message.channel)
+        else:
+            await self.send(ScryfallHandler.BAD_QUERY_MESSAGE, message.channel)
 
     async def handle_reaction(self, reaction, _):
         if reaction.message.id not in self.sent:
             return
 
         emoji = utilities.get_emoji_name(reaction.emoji)
-        embed_style = (
-            "thumbnail"
-            if emoji in ScryfallHandler.SHRINK_EMOJIS
-            else "full"
-            if emoji in ScryfallHandler.ENLARGE_EMOJIS
-            else None
-        )
+        embed_style = None
+        for key in ScryfallHandler.EMBED_EMOJI_MAPPING.keys():
+            if emoji in ScryfallHandler.EMBED_EMOJI_MAPPING[key]:
+                embed_style = key
+                break
+
         index = (
             int(emoji[-1:]) - 1
             if emoji.startswith("keycap_") and 0 < int(emoji[-1]) < 6
@@ -393,7 +439,7 @@ class ScryfallHandler(commands.Pattern):
             return
 
         message, sent = self.sent[reaction.message.id]
-        if type(sent) == CardList and index is not None:
+        if isinstance(sent, CardList) and index is not None:
             try:
                 card = sent.select_option(index)
             except IndexError:
@@ -410,7 +456,10 @@ class ScryfallHandler(commands.Pattern):
             await reaction.clear()
             return
 
-        if embed_style is None or embed_style == sent.embed_style:
+        if embed_style is None:
+            return
+        elif embed_style == sent.embed_style:
+            await reaction.clear()
             return
 
         if isinstance(sent, Card):
