@@ -111,6 +111,10 @@ class DoubleFacedCard(Card):
             f"back_face: {self.back_face}>"
         )
 
+    def set_embed_style(self, style):
+        super().set_embed_style(style)
+        self.back_face.set_embed_style(style)
+
     def get_embeds(self, style=None):
         return [self.get_embed(style), self.back_face.get_embed(style)]
 
