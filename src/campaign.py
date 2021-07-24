@@ -213,7 +213,7 @@ class New(CampaignCommand):
         super().__init__(config, commands=["new"], needs_alnum=True)
 
     async def _handle(self, guild, campaign, arg, _target):
-        if arg == "":
+        if arg in ["help", ""]:
             return "Usage: `--dnd new <name>`."
 
         if campaign:
@@ -400,7 +400,9 @@ class SetCampaign(CampaignCommand):
     async def _handle(self, guild, campaign, arg, _target):
         if campaign and campaign.name.lower() == arg.lower():
             return f"{campaign.name} is already the active campaign."
-        elif arg == "":
+        elif arg == "" and campaign:
+            return f"The current campaign is {campaign.name}."
+        elif arg in ["help", ""]:
             return (
                 "Usage: `--dnd campaign <campaign name>` to switch to "
                 + "a different campaign. To create a new campaign use "
