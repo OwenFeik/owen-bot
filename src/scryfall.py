@@ -240,6 +240,11 @@ class ScryfallRequest:
             f"embed_style: {self.embed_style}>"
         )
 
+    def format_query(self, query_type, *args):
+        return ScryfallRequest.QUERIES[query_type].format(
+            *map(requests.utils.quote, args)
+        )
+
     def perform_request(self, query, failure_message, suggest=None):
         self.result = failure_message
 
@@ -248,7 +253,7 @@ class ScryfallRequest:
             if suggest is not None:
                 resp = requests.get(
                     ScryfallRequest.BASE_URL
-                    + ScryfallRequest.QUERIES["search"].format(self.query)
+                    + self.format_query("search", self.query)
                 ).json()
 
                 if resp.get("status") == 404:
@@ -284,7 +289,7 @@ class ScryfallRequest:
     def get_random_card(self):
         if self.ed:
             return self.perform_request(
-                ScryfallRequest.QUERIES["random_ed"].format(self.ed),
+                self.format_query("random_ed", self.ed),
                 f'I couldn\'t find edition "{self.ed}".',
             )
         return self.perform_request(
@@ -294,8 +299,8 @@ class ScryfallRequest:
 
     def get_best_card(self):
         return self.perform_request(
-            ScryfallRequest.QUERIES["fuzzy"].format(
-                random.choice(ScryfallRequest.BEST_CARDS)
+            self.format_query(
+                "fuzzy", random.choice(ScryfallRequest.BEST_CARDS)
             ),
             ScryfallRequest.ERROR_MESSAGE.format("find the best card."),
         )
@@ -304,19 +309,19 @@ class ScryfallRequest:
         if self.ed:
             query_string = f'"{self.query}" in "{self.ed}"'
             return self.perform_request(
-                ScryfallRequest.QUERIES["name_ed"].format(self.ed, self.query),
+                self.format_query("name_ed", self.ed, self.query),
                 ScryfallRequest.FAILURE_MESSAGE.format(query_string),
                 ScryfallRequest.SUGGEST_MESSAGE.format(query_string),
             )
         return self.perform_request(
-            ScryfallRequest.QUERIES["fuzzy"].format(self.query),
+            self.format_query("fuzzy", self.query),
             ScryfallRequest.FAILURE_MESSAGE.format(self.query),
             ScryfallRequest.SUGGEST_MESSAGE.format(self.query),
         )
 
     def get_search_results(self):
         return self.perform_request(
-            ScryfallRequest.QUERIES["search"].format(self.query),
+            self.format_query("search", self.query),
             ScryfallRequest.FAILURE_MESSAGE.format(
                 "any cards matching this search."
             ),
@@ -360,7 +365,7 @@ POSSIBLE_PREFIXES = (
 )
 QUERY_REGEX = re.compile(
     rf"\[(?P<prefix>{POSSIBLE_PREFIXES})?"
-    r"(?P<query>[\w ,.:=!?&\'\/\-\"\(\)<>{}]+)"
+    r"(?P<query>[\w +,.:=!?&\'\/\-\"\(\)<>{}]+)"
     r"(\|(?P<ed>[a-z0-9 \-]+))?\]",
     flags=re.IGNORECASE,
 )
