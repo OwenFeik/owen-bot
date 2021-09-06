@@ -426,8 +426,18 @@ class SetCampaign(CampaignCommand):
             await self.meta.db.add_campaign(self.meta.campaigns[guild.id])
         self.meta.campaigns[guild.id] = new
         await self.meta.db.set_active(new)
-        await self.meta.apply_campaign(guild)
-        return f"The active campaign is now {new.name}."
+
+        msg = f"The active campaign is now {new.name}."
+
+        try:
+            await self.meta.apply_campaign(guild)
+        except discord.Forbidden:
+            msg += (
+                " I lack some permissions on this server, "
+                "so roles or nicknames may not be updated."
+            )
+
+        return msg
 
 
 class SetDM(CampaignCommand):
@@ -681,13 +691,16 @@ class CampaignSwitcher(commands.Command):
         )
 
         if dm_role is None:
-            dm_role = await server.create_role(
-                name=self.dm_role,
-                colour=self.DM_COLOUR,
-                hoist=False,
-                mentionable=True,
-                reason="Created by owen-bot for campaign functionality.",
-            )
+            try:
+                dm_role = await server.create_role(
+                    name=self.dm_role,
+                    colour=self.DM_COLOUR,
+                    hoist=False,
+                    mentionable=True,
+                    reason="Created by owen-bot for campaign functionality.",
+                )
+            except discord.Forbidden:
+                return None
 
         return dm_role
 
@@ -695,11 +708,18 @@ class CampaignSwitcher(commands.Command):
         # guild: the Guild object of the relevant server
         dm_role = await self.get_dm_role(guild)
 
+        if not dm_role:
+            utilities.log_message(f"Missing role permissions in {guild.name}.")
+            return
+
         campaign = await self.get_active_campaign(guild.id)
 
         for player in campaign.players:
             member = await utilities.get_member(guild, player)
-            if dm_role in member.roles:
+            if (
+                not utilities.is_guild_owner(guild, member.id)
+                and dm_role in member.roles
+            ):
                 await member.remove_roles(dm_role)
 
         if not campaign.dm:
@@ -707,7 +727,8 @@ class CampaignSwitcher(commands.Command):
 
         try:
             dm = await utilities.get_member(guild, campaign.dm)
-            await dm.add_roles(dm_role)
+            if not utilities.is_guild_owner(guild, member.id):
+                await dm.add_roles(dm_role)
         except AttributeError:
             # didn't find dm for some reason
             utilities.log_message(
