@@ -25,9 +25,11 @@ class xkcd:
         temp = ""
         strip = xkcd()
         for c in name:
+            # / means the comic number has ended. Some titles also have a /, so
+            # ignore / after the first
             if (
                 c == "/" and not strip.idno
-            ):  # / means the comic number has ended. Some titles also have a /, so ignore / after the first
+            ):  
                 strip.idno = temp
                 temp = ""
             elif c == ">":  # > is the beginning of the name
@@ -47,11 +49,10 @@ class xkcd:
         src = r.content.decode()  # Decode from raw binary
 
         uri = re.search(
-            r"https://imgs\.xkcd\.com/comics/[\w.()-]+\n", src
+            r"https://imgs\.xkcd\.com/comics/[\w.()-]+", src
         )  # Pull the permalink
         if uri:
             uri = uri.group(0)
-            uri = uri[: len(uri) - 1]  # Cut off the newline character
             self.uri = uri
 
         alt = re.search(
