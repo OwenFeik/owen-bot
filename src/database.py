@@ -164,14 +164,12 @@ class Roll_Database(Interface):
 
         return campaign_id, campaign_name
 
-    async def insert_roll(self, roll, user, server):
+    async def insert_roll(self, dice_str, rolls_str, user, server):
         try:
             campaign_id, _ = await self.get_active_campaign(user, server.id)
         except ValueError:
             campaign_id = None
 
-        rolls_str = ",".join([str(r) for r in roll.rolls])
-        dice_str = roll.dice_str()
         data = (dice_str, rolls_str, user.id, server.id, campaign_id)
         await database.execute(
             "INSERT INTO rolls VALUES(?, ?, ?, ?, ?);", data, TransTypes.COMMIT

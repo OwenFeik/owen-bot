@@ -50,7 +50,10 @@ class RollCommand(commands.Command):
 
         if server and user:
             for r in rolls:
-                await self.db.insert_roll(r, user, server)
+                for dice_str, values in r.roll_info():
+                    await self.db.insert_roll(
+                        dice_str, ",".join(map(str, values)), user, server
+                    )
 
         e = build_embed(rolls, mention, string)
         if command == "--roll":
@@ -124,7 +127,17 @@ class RollCommand(commands.Command):
 def build_embed(rolls, mention, string):
     if len(rolls) == 1:
         title = f"{mention} rolled "
-        title += "a die:" if len(rolls[0].rolls) == 1 else "some dice:"
+
+        utilities.log_message(rolls)
+
+        # [("dice_str", [rolls])]
+        info = rolls[0].roll_info()
+
+        title += (
+            "a die:"
+            if len(info) == 1 and len(info)[0][1] == 1
+            else "some dice:"
+        )
         message = str(rolls[0])
     else:
         total = 0
