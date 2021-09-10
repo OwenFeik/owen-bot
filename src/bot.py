@@ -3,6 +3,7 @@
 import asyncio
 import difflib
 import re
+import traceback
 
 import discord
 
@@ -125,6 +126,7 @@ class Bot:
             utilities.log_message(
                 "Ran into issue handling command " + f"{message.content}: {e}"
             )
+            utilities.log_message(f"Stack trace:\n{traceback.format_exc()}")
             await message.channel.send("Ran into an issue with that command.")
             return
 
@@ -160,6 +162,7 @@ class Bot:
                     )
             except Exception as e:
                 utilities.log_message(f"Ran into issue sending response: {e}")
+                utilities.log_message(f"Stack trace:\n{traceback.format_exc()}")
                 await message.channel.send(
                     "Failed to send response. " + "@Owen to report."
                 )
