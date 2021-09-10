@@ -27,9 +27,7 @@ class xkcd:
         for c in name:
             # / means the comic number has ended. Some titles also have a /, so
             # ignore / after the first
-            if (
-                c == "/" and not strip.idno
-            ):  
+            if c == "/" and not strip.idno:
                 strip.idno = temp
                 temp = ""
             elif c == ">":  # > is the beginning of the name
