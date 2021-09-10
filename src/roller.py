@@ -128,8 +128,6 @@ def build_embed(rolls, mention, string):
     if len(rolls) == 1:
         title = f"{mention} rolled "
 
-        utilities.log_message(rolls)
-
         # [("dice_str", [rolls])]
         info = rolls[0].roll_info()
 
@@ -138,7 +136,7 @@ def build_embed(rolls, mention, string):
             if len(info) == 1 and len(info)[0][1] == 1
             else "some dice:"
         )
-        message = str(rolls[0])
+        message = rolls[0].full_str()
     else:
         total = 0
         title = f"{mention} rolled `{string.strip()}`"
