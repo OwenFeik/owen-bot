@@ -27,7 +27,7 @@ fi
 
 if [ "$MODE" == "-b" ]; then
 	sudo docker rm owen-bot
-	sudo docker build -t "owen-bot" .
+	sudo docker build --no-cache -t "owen-bot" .
 fi
 
 sudo docker run -d --name "owen-bot" -e TZ=Australia/Melbourne \
