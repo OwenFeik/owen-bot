@@ -133,7 +133,7 @@ def build_embed(rolls, mention, string):
 
         title += (
             "a die:"
-            if len(info) == 1 and len(info)[0][1] == 1
+            if len(info) == 1 and len(info[0][1]) == 1
             else "some dice:"
         )
         message = rolls[0].full_str()
