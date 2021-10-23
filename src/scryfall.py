@@ -365,7 +365,7 @@ POSSIBLE_PREFIXES = (
 )
 QUERY_REGEX = re.compile(
     rf"\[(?P<prefix>{POSSIBLE_PREFIXES})?"
-    r"(?P<query>[\w +,.:=!?&\'\/\-\"\(\)<>{}]+)"
+    r"(?P<query>[\w *+,.:=!?&\'\/\-\"\(\)<>{}]+)"
     r"(\|(?P<ed>[a-z0-9 \-]+))?\]",
     flags=re.IGNORECASE,
 )
