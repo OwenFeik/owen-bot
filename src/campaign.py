@@ -234,7 +234,7 @@ class Nick(CampaignCommand):
         )
 
         self.regex = f'^--dnd ({"|".join(self.commands)})'
-        self.nick_regex = re.compile(r"^[\w\- ]{1,32}$")
+        self.nick_regex = re.compile(r"^[\w\-,' ]{1,32}$")
 
     async def handle(self, message):
         campaign = await self.meta.get_active_campaign(message.guild.id)
