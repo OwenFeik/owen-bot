@@ -150,7 +150,6 @@ class Bot:
                             )
                             await message.channel.send(
                                 "Ran into an issue with that command. "
-                                "@Owen to report."
                             )
                 else:
                     utilities.log_message(
@@ -158,13 +157,13 @@ class Bot:
                         + f'"{message.content}": {type(resp)}.'
                     )
                     await message.channel.send(
-                        "Ran into an issue with that command. @Owen to report."
+                        "Ran into an issue with that command."
                     )
             except Exception as e:
                 utilities.log_message(f"Ran into issue sending response: {e}")
                 utilities.log_message(f"Stack trace:\n{traceback.format_exc()}")
                 await message.channel.send(
-                    "Failed to send response. " + "@Owen to report."
+                    "Failed to send response."
                 )
 
         if cmd.delete_message:
