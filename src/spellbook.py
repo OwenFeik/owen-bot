@@ -188,4 +188,4 @@ def chunk_spell_desc(desc):
                 desc.insert(i, c)
         i += 1
 
-    return desc
+    return [chunk for chunk in desc if chunk]
