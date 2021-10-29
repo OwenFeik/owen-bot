@@ -162,9 +162,7 @@ class Bot:
             except Exception as e:
                 utilities.log_message(f"Ran into issue sending response: {e}")
                 utilities.log_message(f"Stack trace:\n{traceback.format_exc()}")
-                await message.channel.send(
-                    "Failed to send response."
-                )
+                await message.channel.send("Failed to send response.")
 
         if cmd.delete_message:
             try:

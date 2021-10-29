@@ -138,16 +138,8 @@ def build_embed(rolls, mention, string):
         )
         message = rolls[0].full_str()
     else:
-        total = 0
         title = f"{mention} rolled `{string.strip()}`"
-        message = ""
-
-        pad_desc = max([len(r.desc_str()) for r in rolls])
-
-        for r in rolls:
-            message += f"{r.full_str(pad_desc)}\n"
-            total = r.apply(total)
-        message += f"Grand Total: {roll.clean_number(total)}"
+        message = roll.rolls_string(rolls)
 
     message = f"```{message}```"
 
