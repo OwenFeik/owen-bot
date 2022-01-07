@@ -727,7 +727,7 @@ class CampaignSwitcher(commands.Command):
 
         try:
             dm = await utilities.get_member(guild, campaign.dm)
-            if not utilities.is_guild_owner(guild, member.id):
+            if not utilities.is_guild_owner(guild, dm.id):
                 await dm.add_roles(dm_role)
         except AttributeError:
             # didn't find dm for some reason
