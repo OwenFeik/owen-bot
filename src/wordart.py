@@ -7,6 +7,10 @@ import utilities
 
 wa_alphabet = {}
 
+UNICODE_EMOJI = {
+    k: v["en"] for k, v in emoji.EMOJI_DATA.items() if "en" in v
+}
+
 
 def load_wa_alphabet():
     try:
@@ -49,7 +53,7 @@ def handle_wordart_request(string, default_emoji):
         return translate(string, character)
 
     for i in range(len(string)):
-        if string[i] in emoji.UNICODE_EMOJI:
+        if string[i] in UNICODE_EMOJI:
             character = string[i]
 
             # unicode variation characters; applied to some emojis.
